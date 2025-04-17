@@ -17,12 +17,6 @@ class DynamoDBClient:
             "region_name": settings.AWS_REGION,
         }
         
-
-            
-        # # If AWS credentials are provided
-        # if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
-        #     kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
-        #     kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
             
         self.dynamodb = boto3.resource('dynamodb', **kwargs)
         self.experiments_table = self.dynamodb.Table(settings.EXPERIMENTS_TABLE)

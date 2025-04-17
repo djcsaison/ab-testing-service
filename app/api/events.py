@@ -1,18 +1,19 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Query, status
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
+import logging
 
 from ..models.events import (
     EventCreate, 
-    EventResponse, 
-    EventsQueryParams
+    EventResponse
 )
 from ..db.dynamodb import dynamodb_client
 from ..services.assignment import assignment_service
 from ..services.experiment import experiment_service
 
 router = APIRouter(prefix="/events", tags=["events"])
+logger = logging.getLogger(__name__)
 
 # Helper function to track events in the background
 async def track_event_async(event_data: dict):
@@ -29,9 +30,61 @@ async def track_event_async(event_data: dict):
         await dynamodb_client.create_event(event_data)
     except Exception as e:
         # Log the error but don't fail the request
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Failed to track event: {str(e)}")
+
+async def validate_experiment_and_variant(experiment_id: str, variant: Optional[str] = None) -> dict:
+    """
+    Validate that the experiment exists and the variant is valid.
+    Returns the experiment if valid, otherwise raises an HTTPException.
+    """
+    experiment = await experiment_service.get_experiment(experiment_id)
+    if not experiment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Experiment with ID {experiment_id} not found"
+        )
+        
+    # If variant is provided, validate it exists in the experiment
+    if variant:
+        valid_variants = [v["name"] for v in experiment.get("variants", [])]
+        if variant not in valid_variants:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Variant '{variant}' is not valid for experiment {experiment_id}"
+            )
+    
+    return experiment
+
+async def create_and_track_event(
+    experiment_id: str,
+    subid: str,
+    event_type: str,
+    variant: str,
+    background_tasks: BackgroundTasks,
+    metadata: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Common function to create and track events
+    """
+    # Validate experiment and variant
+    await validate_experiment_and_variant(experiment_id, variant)
+    
+    # Create the event data
+    event_data = {
+        "experiment_id": experiment_id,
+        "subid": subid,
+        "event_type": event_type,
+        "variant": variant,
+        "event_id": str(uuid.uuid4()),
+        "timestamp": datetime.utcnow(),
+        "metadata": metadata or {}
+    }
+    
+    # Process in background
+    background_tasks.add_task(track_event_async, event_data)
+    
+    # Return the event data
+    return event_data
 
 
 @router.post("", response_model=EventResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -42,37 +95,19 @@ async def track_event(event: EventCreate, background_tasks: BackgroundTasks):
     This endpoint processes events asynchronously to minimize latency
     """
     try:
-        # Validate that the experiment exists
-        experiment = await experiment_service.get_experiment(event.experiment_id)
-        if not experiment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Experiment with ID {event.experiment_id} not found"
-            )
-            
-        # Validate that the variant exists in the experiment
-        valid_variants = [v["name"] for v in experiment.get("variants", [])]
-        if event.variant not in valid_variants:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Variant '{event.variant}' is not valid for experiment {event.experiment_id}"
-            )
-        
-        # Convert to dict for background processing
-        event_dict = event.dict()
-        
-        # Add event_id and timestamp
-        event_dict["event_id"] = str(uuid.uuid4())
-        event_dict["timestamp"] = datetime.utcnow()
-        
-        # Process in background
-        background_tasks.add_task(track_event_async, event_dict)
-        
-        # Return the event data immediately
-        return event_dict
+        # Use the common function to create and track the event
+        return await create_and_track_event(
+            experiment_id=event.experiment_id,
+            subid=event.subid,
+            event_type=event.event_type,
+            variant=event.variant,
+            background_tasks=background_tasks,
+            metadata=event.metadata
+        )
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Failed to track event: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to track event: {str(e)}")
 
 
@@ -89,6 +124,10 @@ async def query_events(
     Query events with optional filtering
     """
     try:
+        # Validate that the experiment exists
+        await validate_experiment_and_variant(experiment_id)
+        
+        # Query the events
         events = await dynamodb_client.query_events(
             experiment_id=experiment_id,
             start_date=start_date,
@@ -98,7 +137,10 @@ async def query_events(
             subid=subid
         )
         return events
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Failed to query events: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to query events: {str(e)}")
 
 
@@ -121,27 +163,19 @@ async def track_impression(
                 detail=f"Could not determine variant for user {subid} in experiment {experiment_id}"
             )
             
-        # Create impression event
-        event_data = {
-            "experiment_id": experiment_id,
-            "subid": subid,
-            "event_type": "impression",
-            "variant": assignment["variant"],
-            "event_id": str(uuid.uuid4()),
-            "timestamp": datetime.utcnow(),
-            "metadata": {"auto_tracked": True}
-        }
-        
-        # Process in background
-        if background_tasks:
-            background_tasks.add_task(track_event_async, event_data)
-        else:
-            await track_event_async(event_data)
-        
-        return event_data
+        # Use the common function to create and track the event
+        return await create_and_track_event(
+            experiment_id=experiment_id,
+            subid=subid,
+            event_type="impression",
+            variant=assignment["variant"],
+            background_tasks=background_tasks or BackgroundTasks(),
+            metadata={"auto_tracked": True}
+        )
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Failed to track impression: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to track impression: {str(e)}")
 
 
@@ -165,25 +199,17 @@ async def track_conversion(
                 detail=f"Could not determine variant for user {subid} in experiment {experiment_id}"
             )
             
-        # Create conversion event
-        event_data = {
-            "experiment_id": experiment_id,
-            "subid": subid,
-            "event_type": "conversion",
-            "variant": assignment["variant"],
-            "event_id": str(uuid.uuid4()),
-            "timestamp": datetime.utcnow(),
-            "metadata": {"conversion_type": conversion_type, "auto_tracked": True}
-        }
-        
-        # Process in background
-        if background_tasks:
-            background_tasks.add_task(track_event_async, event_data)
-        else:
-            await track_event_async(event_data)
-        
-        return event_data
+        # Use the common function to create and track the event
+        return await create_and_track_event(
+            experiment_id=experiment_id,
+            subid=subid,
+            event_type="conversion",
+            variant=assignment["variant"],
+            background_tasks=background_tasks or BackgroundTasks(),
+            metadata={"conversion_type": conversion_type, "auto_tracked": True}
+        )
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Failed to track conversion: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to track conversion: {str(e)}")

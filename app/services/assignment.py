@@ -1,14 +1,13 @@
 import hashlib
 import logging
-from typing import Dict, List, Optional, Tuple
-from decimal import Decimal
+from typing import Dict, List, Optional
+from datetime import datetime
 
 from ..models.experiment import ExperimentInDB
 from ..models.assignment import AssignmentInDB, AssignmentCreate
 from ..db.dynamodb import dynamodb_client
 from ..db.redis import redis_client
 from ..config import settings
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -119,38 +118,38 @@ class AssignmentService:
         Deterministic variant assignment algorithm
         Uses a hash of the user ID and experiment ID to ensure consistent assignments
         Respects variant weights for proper distribution
+        
+        Uses integer weights for simplicity and efficiency
         """
         # Create a hash of the user ID, experiment ID, and salt
         hash_input = f"{subid}:{experiment_id}:{settings.ASSIGNMENT_HASH_SALT}"
         hash_obj = hashlib.sha256(hash_input.encode())
         hash_hex = hash_obj.hexdigest()
         
-        # Convert first 8 characters of hash to an integer (0-0xFFFFFFFF)
+        # Convert first 8 characters of hash to an integer
         hash_int = int(hash_hex[:8], 16)
         
-        # Normalize to a value between 0 and 1
-        normalized_hash = hash_int / 0xFFFFFFFF
+        # Get integer weights
+        weights = [int(variant.get("weight", 1)) for variant in variants]
         
-        # Calculate cumulative weights
-        total_weight = 0.0
-        for variant in variants:
-            weight = float(variant.get("weight", 1.0))  # Convert to float
-            total_weight += weight
+        # Calculate the total weight
+        total_weight = sum(weights)
         
-        cumulative_weights = []
-        cumulative = 0.0
+        # Avoid division by zero
+        if total_weight <= 0:
+            logger.warning(f"Total weight for experiment {experiment_id} is zero or negative. Defaulting to first variant.")
+            return variants[0]["name"]
         
-        for variant in variants:
-            weight = float(variant.get("weight", 1.0))  # Convert to float
-            normalized_weight = weight / total_weight
-            cumulative += normalized_weight
-            cumulative_weights.append((variant["name"], cumulative))
+        # Get a value between 0 and total_weight-1
+        target = hash_int % total_weight
         
-        # Find the variant that corresponds to the hash value
-        for variant_name, threshold in cumulative_weights:
-            if normalized_hash <= threshold:
-                return variant_name
-                
+        # Select the variant based on the target value
+        running_total = 0
+        for i, variant in enumerate(variants):
+            running_total += weights[i]
+            if target < running_total:
+                return variant["name"]
+
         # Fallback (should never happen unless there's a rounding error)
         return variants[-1]["name"]
 
