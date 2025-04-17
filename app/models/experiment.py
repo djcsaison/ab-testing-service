@@ -13,7 +13,7 @@ class ExperimentStatus(str, Enum):
 class Variant(BaseModel):
     name: str
     description: Optional[str] = None
-    weight: float = 1.0  # Default even distribution
+    weight: int = 1  # Integer weight with default of 1
     
     @validator('weight')
     def weight_must_be_positive(cls, v):
