@@ -52,7 +52,17 @@ class DynamoDBClient:
     
     async def create_experiment(self, experiment: Dict) -> Dict:
         try:
+            # Ensure experiment_id is set correctly for the primary key
+            if "experiment_id" not in experiment:
+                # If using name as experiment_id, make sure it's set
+                if "name" in experiment:
+                    experiment["experiment_id"] = experiment["name"]
+                else:
+                    raise ValueError("Experiment must have either experiment_id or name")
+                    
             serialized_item = self._serialize_item(experiment)
+            
+            # Use the ConditionExpression to ensure uniqueness
             response = self.experiments_table.put_item(
                 Item=serialized_item,
                 ConditionExpression="attribute_not_exists(experiment_id)"
@@ -60,21 +70,24 @@ class DynamoDBClient:
             return experiment
         except ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                raise ValueError(f"Experiment with ID {experiment['experiment_id']} already exists")
+                raise ValueError(f"Experiment with ID {experiment.get('experiment_id', experiment.get('name'))} already exists")
             logger.error(f"Error creating experiment: {str(e)}")
             raise
-    
-    async def get_experiment(self, experiment_id: str) -> Optional[Dict]:
+
+    async def get_experiment(self, name_or_id: str) -> Optional[Dict]:
+        """Get experiment by name or ID"""
         try:
+            # Since we're using the name as the ID, we need to use experiment_id as the key
             response = self.experiments_table.get_item(
-                Key={"experiment_id": experiment_id}
+                Key={"experiment_id": name_or_id}
             )
             return response.get('Item')
         except ClientError as e:
             logger.error(f"Error retrieving experiment: {str(e)}")
             raise
-    
-    async def update_experiment(self, experiment_id: str, update_data: Dict) -> Dict:
+
+    async def update_experiment(self, name: str, update_data: Dict) -> Dict:
+        """Update an experiment by name"""
         try:
             # Build update expression
             update_expression = "SET "
@@ -95,7 +108,7 @@ class DynamoDBClient:
             update_expression = update_expression[:-2]
             
             response = self.experiments_table.update_item(
-                Key={"experiment_id": experiment_id},
+                Key={"name": name},
                 UpdateExpression=update_expression,
                 ExpressionAttributeValues=expression_attribute_values,
                 ExpressionAttributeNames=expression_attribute_names,
@@ -106,17 +119,18 @@ class DynamoDBClient:
         except ClientError as e:
             logger.error(f"Error updating experiment: {str(e)}")
             raise
-    
-    async def delete_experiment(self, experiment_id: str) -> bool:
+
+    async def delete_experiment(self, name: str) -> bool:
+        """Delete an experiment by name"""
         try:
             self.experiments_table.delete_item(
-                Key={"experiment_id": experiment_id}
+                Key={"name": name}
             )
             return True
         except ClientError as e:
             logger.error(f"Error deleting experiment: {str(e)}")
             raise
-    
+        
     async def list_experiments(self, status: Optional[str] = None) -> List[Dict]:
         try:
             if status:
@@ -276,6 +290,43 @@ class DynamoDBClient:
             counts[variant] += 1
             
         return counts
+
+    async def get_assignment_counts_by_variant(
+    self,
+    experiment_id: str
+    ) -> Dict[str, int]:
+        """Get assignment counts grouped by variant for an experiment"""
+        try:
+            # Scan the assignments table for this experiment
+            response = self.assignments_table.scan(
+                FilterExpression=Attr("experiment_id").eq(experiment_id)
+            )
+            
+            # Group by variant
+            counts = {}
+            for assignment in response.get('Items', []):
+                variant = assignment.get("variant")
+                if variant not in counts:
+                    counts[variant] = 0
+                counts[variant] += 1
+                
+            # Handle pagination if needed
+            while 'LastEvaluatedKey' in response:
+                response = self.assignments_table.scan(
+                    FilterExpression=Attr("experiment_id").eq(experiment_id),
+                    ExclusiveStartKey=response['LastEvaluatedKey']
+                )
+                
+                for assignment in response.get('Items', []):
+                    variant = assignment.get("variant")
+                    if variant not in counts:
+                        counts[variant] = 0
+                    counts[variant] += 1
+            
+            return counts
+        except ClientError as e:
+            logger.error(f"Error getting assignment counts: {str(e)}")
+            raise
 
 # Initialize a global client instance
 dynamodb_client = DynamoDBClient()

@@ -1,3 +1,4 @@
+# app/api/experiments.py
 from fastapi import APIRouter, HTTPException, Depends, Query, status
 from typing import List, Optional
 
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/experiments", tags=["experiments"])
 
 @router.post("", response_model=ExperimentResponse, status_code=status.HTTP_201_CREATED)
 async def create_experiment(experiment: ExperimentCreate):
-    """Create a new AB testing experiment"""
+    """Create a new AB testing experiment using experiment name as identifier"""
     try:
         created = await experiment_service.create_experiment(experiment.dict())
         return created
@@ -37,12 +38,12 @@ async def list_experiments(
 
 @router.get("/{experiment_id}", response_model=ExperimentResponse)
 async def get_experiment(experiment_id: str):
-    """Get experiment details by ID"""
+    """Get experiment details by ID (which is the experiment name)"""
     experiment = await experiment_service.get_experiment(experiment_id)
     if not experiment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Experiment with ID {experiment_id} not found"
+            detail=f"Experiment '{experiment_id}' not found"
         )
     return experiment
 
@@ -68,59 +69,45 @@ async def delete_experiment(experiment_id: str):
     try:
         success = await experiment_service.delete_experiment(experiment_id)
         if not success:
-            raise HTTPException(status_code=404, detail=f"Experiment with ID {experiment_id} not found")
+            raise HTTPException(status_code=404, detail=f"Experiment '{experiment_id}' not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete experiment: {str(e)}")
 
-@router.post("/{experiment_id}/activate", response_model=ExperimentResponse)
-async def activate_experiment(experiment_id: str):
-    """Activate an experiment"""
+@router.post("/{experiment_id}/status", response_model=ExperimentResponse)
+async def update_experiment_status(
+    experiment_id: str, 
+    status: ExperimentStatus
+):
+    """
+    Update experiment status
+    
+    This consolidated endpoint replaces the separate activate/pause/complete/archive endpoints
+    """
     try:
-        activated = await experiment_service.activate_experiment(experiment_id)
-        return activated
+        updated = await experiment_service.update_experiment_status(experiment_id, status)
+        return updated
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to activate experiment: {str(e)}")
-
-@router.post("/{experiment_id}/pause", response_model=ExperimentResponse)
-async def pause_experiment(experiment_id: str):
-    """Pause an experiment"""
-    try:
-        paused = await experiment_service.pause_experiment(experiment_id)
-        return paused
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to pause experiment: {str(e)}")
-
-@router.post("/{experiment_id}/complete", response_model=ExperimentResponse)
-async def complete_experiment(experiment_id: str):
-    """Mark an experiment as completed"""
-    try:
-        completed = await experiment_service.complete_experiment(experiment_id)
-        return completed
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to complete experiment: {str(e)}")
-
-@router.post("/{experiment_id}/archive", response_model=ExperimentResponse)
-async def archive_experiment(experiment_id: str):
-    """Archive an experiment"""
-    try:
-        archived = await experiment_service.archive_experiment(experiment_id)
-        return archived
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to archive experiment: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update experiment status: {str(e)}")
 
 @router.get("/{experiment_id}/stats", response_model=ExperimentStats)
-async def get_experiment_stats(experiment_id: str, event_types: Optional[List[str]] = Query(None)):
-    """Get experiment statistics by variant"""
+async def get_experiment_stats(
+    experiment_id: str, 
+    event_types: Optional[List[str]] = Query(None),
+    include_assignments: bool = Query(True, description="Include assignment counts in statistics")
+):
+    """
+    Get experiment statistics by variant
+    
+    By default focuses on assignment counts with optional event data
+    """
     try:
-        stats = await experiment_service.get_experiment_stats(experiment_id, event_types)
+        stats = await experiment_service.get_experiment_stats(
+            experiment_id, 
+            event_types,
+            include_assignments
+        )
         return {
             "experiment_id": experiment_id,
             "variant_stats": stats

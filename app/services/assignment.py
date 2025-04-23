@@ -1,10 +1,9 @@
+# app/services/assignment.py
 import hashlib
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 
-from ..models.experiment import ExperimentInDB
-from ..models.assignment import AssignmentInDB, AssignmentCreate
 from ..db.dynamodb import dynamodb_client
 from ..db.redis import redis_client
 from ..config import settings
@@ -40,10 +39,14 @@ class AssignmentService:
         subid: str, 
         experiment_id: str, 
         experiment: Optional[Dict] = None
-    ) -> Dict:
+    ) -> Tuple[Dict, bool]:
         """
         Create a new assignment for a user in an experiment
         Uses a deterministic algorithm to ensure consistency
+        
+        Returns:
+            Tuple of (assignment_data, is_experiment_full)
+            If is_experiment_full is True, the assignment is a default variant
         """
         # Get experiment if not provided
         if experiment is None:
@@ -58,17 +61,50 @@ class AssignmentService:
                     await redis_client.set_experiment(experiment_id, experiment)
                     
             if not experiment:
-                raise ValueError(f"Experiment {experiment_id} not found")
+                raise ValueError(f"Experiment '{experiment_id}' not found")
                 
         # Check if experiment is active
         if experiment.get("status") != "active":
-            raise ValueError(f"Experiment {experiment_id} is not active")
+            raise ValueError(f"Experiment '{experiment_id}' is not active")
             
         # Get variants from experiment
         variants = experiment.get("variants", [])
         if not variants:
-            raise ValueError(f"Experiment {experiment_id} has no variants")
+            raise ValueError(f"Experiment '{experiment_id}' has no variants")
+        
+        # Check if experiment has reached population limit
+        experiment_full = False
+        default_variant = variants[0]["name"]  # Use first variant as default
+        
+        # Only check population limit if total_population is set
+        if experiment.get("total_population"):
+            # Get current assignment count
+            assignment_counts = await dynamodb_client.get_assignment_counts_by_variant(experiment_id)
+            total_assigned = sum(assignment_counts.values())
             
+            # Check if limit reached
+            if total_assigned >= experiment.get("total_population", 0):
+                experiment_full = True
+                
+                # Create assignment record with default variant and special flag
+                assignment = {
+                    "subid": subid,
+                    "experiment_id": experiment_id,
+                    "variant": default_variant,
+                    "created_at": datetime.utcnow().isoformat(),
+                    "is_default_assignment": True,
+                    "reason": "experiment_population_limit_reached"
+                }
+                
+                # Save to database (we still save these to keep track of overflow)
+                await dynamodb_client.create_assignment(assignment)
+                
+                # Update cache
+                await redis_client.set_assignment(subid, experiment_id, assignment)
+                
+                return assignment, experiment_full
+        
+        # If not full, proceed with normal assignment
         # Determine which variant to assign using a deterministic algorithm
         variant = await AssignmentService._get_variant_for_user(subid, experiment_id, variants)
         
@@ -77,7 +113,8 @@ class AssignmentService:
             "subid": subid,
             "experiment_id": experiment_id,
             "variant": variant,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.utcnow().isoformat(),
+            "is_default_assignment": False
         }
         
         # Save to database
@@ -86,12 +123,14 @@ class AssignmentService:
         # Update cache
         await redis_client.set_assignment(subid, experiment_id, assignment)
         
-        return assignment
+        return assignment, experiment_full
     
     @staticmethod
     async def get_or_create_assignment(subid: str, experiment_id: str) -> Dict:
         """
         Get an existing assignment or create a new one if not found
+        
+        Returns assignment data with additional status info if experiment is full
         """
         # Try to get existing assignment
         existing = await AssignmentService.get_assignment(subid, experiment_id)
@@ -99,7 +138,13 @@ class AssignmentService:
             return existing
             
         # Create new assignment if not found
-        return await AssignmentService.create_assignment(subid, experiment_id)
+        assignment, is_experiment_full = await AssignmentService.create_assignment(subid, experiment_id)
+        
+        # If the experiment is full, add a special status to the response
+        if is_experiment_full:
+            assignment["status"] = "experiment_population_limit_reached"
+            
+        return assignment
     
     @staticmethod
     async def get_user_assignments(subid: str) -> List[Dict]:

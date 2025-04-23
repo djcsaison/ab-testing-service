@@ -104,21 +104,27 @@ class RedisClient:
             
     # Specific cache methods for our AB testing service
     
-    async def get_experiment(self, experiment_id: str) -> Optional[Dict]:
-        """Get cached experiment data"""
-        return await self.get(f"experiment:{experiment_id}")
-    
-    async def set_experiment(self, experiment_id: str, experiment_data: Dict) -> bool:
-        """Cache experiment data"""
+    async def get_experiment(self, name: str) -> Optional[Dict]:
+        """Get cached experiment data by name"""
+        return await self.get(f"experiment:{name}")
+
+    async def set_experiment(self, name: str, experiment_data: Dict) -> bool:
+        """Cache experiment data by name"""
         return await self.set(
-            f"experiment:{experiment_id}", 
+            f"experiment:{name}", 
             experiment_data, 
             ttl=settings.EXPERIMENT_CACHE_TTL
         )
-    
-    async def delete_experiment_cache(self, experiment_id: str) -> int:
-        """Delete experiment cache"""
-        return await self.delete(f"experiment:{experiment_id}")
+
+    async def delete_experiment_cache(self, name: str) -> int:
+        """Delete experiment cache by name"""
+        return await self.delete(f"experiment:{name}")
+
+    async def clear_experiment_caches(self, name: str) -> int:
+        """Clear all caches related to an experiment (useful when updating experiment)"""
+        # This only clears the experiment config cache
+        # Assignment caches will persist until they expire to maintain user experience
+        return await self.delete_experiment_cache(name)
     
     async def get_assignment(self, subid: str, experiment_id: str) -> Optional[Dict]:
         """Get cached assignment"""
