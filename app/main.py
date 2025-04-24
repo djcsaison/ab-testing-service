@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 import logging
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from .config import settings
 from .api import experiments, assignments, events
@@ -97,6 +99,13 @@ app.include_router(experiments.router, prefix="/api")
 app.include_router(assignments.router, prefix="/api")
 app.include_router(events.router, prefix="/api")
 
+# Mount static files directory
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+else:
+    logger.warning(f"Static files directory {static_dir} does not exist")
+
 # Add a health check endpoint
 @app.get("/api/health", tags=["health"])
 async def health_check():
@@ -120,9 +129,32 @@ async def health_check():
         }
     }
 
-# Root route for info
-@app.get("/", tags=["root"])
-async def root():
+# Serve admin dashboard at root
+@app.get("/", response_class=HTMLResponse, tags=["dashboard"])
+async def admin_dashboard():
+    static_dir = Path(__file__).parent / "static"
+    index_path = static_dir / "index.html"
+    
+    if index_path.exists():
+        with open(index_path, "r") as f:
+            return f.read()
+    else:
+        return """
+        <html>
+            <head>
+                <title>A/B Testing Service</title>
+            </head>
+            <body>
+                <h1>A/B Testing Service</h1>
+                <p>Admin dashboard not found. Please check the static files directory.</p>
+                <p>API is available at <a href="/api/docs">/api/docs</a></p>
+            </body>
+        </html>
+        """
+
+# Return API info for /api endpoint
+@app.get("/api", tags=["root"])
+async def api_root():
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,

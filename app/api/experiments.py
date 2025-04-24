@@ -1,5 +1,5 @@
 # app/api/experiments.py
-from fastapi import APIRouter, HTTPException, Depends, Query, status
+from fastapi import APIRouter, HTTPException, Depends, Query, status, Body
 from typing import List, Optional
 
 from ..models.experiment import (
@@ -76,7 +76,7 @@ async def delete_experiment(experiment_id: str):
 @router.post("/{experiment_id}/status", response_model=ExperimentResponse)
 async def update_experiment_status(
     experiment_id: str, 
-    status: ExperimentStatus
+    status: ExperimentStatus = Body(..., embed=True)
 ):
     """
     Update experiment status
