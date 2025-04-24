@@ -108,7 +108,7 @@ class DynamoDBClient:
             update_expression = update_expression[:-2]
             
             response = self.experiments_table.update_item(
-                Key={"name": name},
+                Key={"experiment_id": name},
                 UpdateExpression=update_expression,
                 ExpressionAttributeValues=expression_attribute_values,
                 ExpressionAttributeNames=expression_attribute_names,
