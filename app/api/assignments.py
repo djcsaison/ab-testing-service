@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, status
+from fastapi.responses import JSONResponse
 from typing import List, Dict
 
 from ..models.assignment import (
@@ -18,6 +19,20 @@ async def get_or_create_assignment(request: AssignmentRequest):
             request.subid, 
             request.experiment_id
         )
+        
+        # Check if experiment is full and this is a default assignment
+        if assignment.get("is_default_assignment") and assignment.get("status") == "experiment_population_limit_reached":
+            # Return 422 Unprocessable Entity to indicate the experiment is full
+            # This is a client error indicating that the server understood the request but
+            # could not process it due to semantic errors (in this case, experiment being full)
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content={
+                    **assignment,
+                    "detail": "Experiment population limit reached. User assigned to default variant."
+                }
+            )
+        
         return assignment
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -32,12 +47,29 @@ async def get_or_create_bulk_assignments(request: BulkAssignmentRequest):
     """
     try:
         results = {}
+        full_experiments = []
+        
         for experiment_id in request.experiment_ids:
             assignment = await assignment_service.get_or_create_assignment(
                 request.subid, 
                 experiment_id
             )
             results[experiment_id] = assignment
+            
+            # Track experiments that are full
+            if assignment.get("is_default_assignment") and assignment.get("status") == "experiment_population_limit_reached":
+                full_experiments.append(experiment_id)
+        
+        # If any experiments are full, return a special response with 422 status
+        if full_experiments:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content={
+                    "assignments": results,
+                    "full_experiments": full_experiments,
+                    "detail": "Some experiments have reached their population limits. Default variants assigned."
+                }
+            )
         
         return results
     except ValueError as e:
@@ -64,6 +96,17 @@ async def get_specific_assignment(subid: str, experiment_id: str):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Assignment for user {subid} in experiment {experiment_id} not found"
             )
+            
+        # Check if experiment is full and this is a default assignment
+        if assignment.get("is_default_assignment") and assignment.get("status") == "experiment_population_limit_reached":
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content={
+                    **assignment,
+                    "detail": "Experiment population limit reached. User assigned to default variant."
+                }
+            )
+            
         return assignment
     except HTTPException:
         raise

@@ -78,12 +78,17 @@ class AssignmentService:
         
         # Only check population limit if total_population is set
         if experiment.get("total_population"):
-            # Get current assignment count
-            assignment_counts = await dynamodb_client.get_assignment_counts_by_variant(experiment_id)
-            total_assigned = sum(assignment_counts.values())
+            # Get current assignment count, excluding default assignments
+            assignment_counts = await dynamodb_client.get_assignment_counts_by_variant(
+                experiment_id, 
+                include_default_assignments=False
+            )
+            
+            # Sum up all non-default assignments
+            real_assignment_count = sum(assignment_counts.values())
             
             # Check if limit reached
-            if total_assigned >= experiment.get("total_population", 0):
+            if real_assignment_count >= experiment.get("total_population", 0):
                 experiment_full = True
                 
                 # Create assignment record with default variant and special flag

@@ -292,10 +292,18 @@ class DynamoDBClient:
         return counts
 
     async def get_assignment_counts_by_variant(
-    self,
-    experiment_id: str
+        self,
+        experiment_id: str,
+        include_default_assignments: bool = False
     ) -> Dict[str, int]:
-        """Get assignment counts grouped by variant for an experiment"""
+        """
+        Get assignment counts grouped by variant for an experiment
+        
+        Args:
+            experiment_id: The experiment ID
+            include_default_assignments: Whether to include default assignments in the count
+                                        (default: False - only count real experiment participants)
+        """
         try:
             # Scan the assignments table for this experiment
             response = self.assignments_table.scan(
@@ -305,24 +313,32 @@ class DynamoDBClient:
             # Group by variant
             counts = {}
             for assignment in response.get('Items', []):
+                # Skip default assignments if we're not including them
+                if not include_default_assignments and assignment.get("is_default_assignment", False):
+                    continue
+                    
                 variant = assignment.get("variant")
                 if variant not in counts:
                     counts[variant] = 0
                 counts[variant] += 1
-                
+                    
             # Handle pagination if needed
             while 'LastEvaluatedKey' in response:
                 response = self.assignments_table.scan(
                     FilterExpression=Attr("experiment_id").eq(experiment_id),
                     ExclusiveStartKey=response['LastEvaluatedKey']
                 )
-                
+                    
                 for assignment in response.get('Items', []):
+                    # Skip default assignments if we're not including them
+                    if not include_default_assignments and assignment.get("is_default_assignment", False):
+                        continue
+                        
                     variant = assignment.get("variant")
                     if variant not in counts:
                         counts[variant] = 0
                     counts[variant] += 1
-            
+                
             return counts
         except ClientError as e:
             logger.error(f"Error getting assignment counts: {str(e)}")
