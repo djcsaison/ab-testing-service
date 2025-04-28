@@ -7,7 +7,7 @@ class ExperimentsManager {
         this.createBtn = document.getElementById('create-experiment-btn');
         this.detailModal = new bootstrap.Modal(document.getElementById('experiment-detail-modal'));
         this.formModal = new bootstrap.Modal(document.getElementById('experiment-form-modal'));
-        
+
         // Form elements
         this.experimentForm = document.getElementById('experiment-form');
         this.formMode = document.getElementById('form-mode');
@@ -17,14 +17,14 @@ class ExperimentsManager {
         this.variantsContainer = document.getElementById('variants-container');
         this.addVariantBtn = document.getElementById('add-variant-btn');
         this.saveExperimentBtn = document.getElementById('save-experiment-btn');
-        
+
         // New statistical parameter fields
         this.baseRate = document.getElementById('base-rate');
         this.minDetectableEffect = document.getElementById('min-detectable-effect');
         this.minSampleSize = document.getElementById('min-sample-size');
         this.confidenceLevel = document.getElementById('confidence-level');
         this.additionalFeatures = document.getElementById('additional-features');
-        
+
         this.init();
     }
 
@@ -34,17 +34,17 @@ class ExperimentsManager {
     init() {
         // Load initial experiments
         this.loadExperiments();
-        
+
         // Set up event listeners
         this.statusFilter.addEventListener('change', () => this.loadExperiments());
         this.searchInput.addEventListener('input', () => this.filterExperiments());
         this.createBtn.addEventListener('click', () => this.showCreateForm());
         this.addVariantBtn.addEventListener('click', () => this.addVariantField());
         this.saveExperimentBtn.addEventListener('click', () => this.saveExperiment());
-        
+
         // Add initial variant fields
         this.resetForm();
-        
+
         // Set up sample size calculator
         if (this.baseRate && this.minDetectableEffect) {
             this.baseRate.addEventListener('change', () => this.updateRecommendedSampleSize());
@@ -60,20 +60,20 @@ class ExperimentsManager {
         const baseRate = parseFloat(this.baseRate.value);
         const mde = parseFloat(this.minDetectableEffect.value);
         const confidence = parseFloat(this.confidenceLevel.value);
-        
+
         if (!isNaN(baseRate) && !isNaN(mde) && mde > 0) {
             // Simple sample size calculation
             // For a proper implementation, you'd use a more accurate statistical formula
-            const z = confidence === 0.99 ? 2.576 : 
-                   confidence === 0.95 ? 1.96 : 
-                   confidence === 0.9 ? 1.645 : 1.96;
-                   
+            const z = confidence === 0.99 ? 2.576 :
+                confidence === 0.95 ? 1.96 :
+                    confidence === 0.9 ? 1.645 : 1.96;
+
             const p = baseRate;
             const d = mde;
-            
+
             // Sample size formula for comparing two proportions
-            const sampleSize = Math.ceil(2 * p * (1-p) * (z/d)**2);
-            
+            const sampleSize = Math.ceil(2 * p * (1 - p) * (z / d) ** 2);
+
             // Update the sample size field
             if (this.minSampleSize && sampleSize > 0) {
                 this.minSampleSize.placeholder = `Recommended: ~${sampleSize}`;
@@ -101,11 +101,11 @@ class ExperimentsManager {
     filterExperiments() {
         const searchTerm = this.searchInput.value.toLowerCase();
         const rows = this.experimentsTable.querySelectorAll('tr');
-        
+
         rows.forEach(row => {
             const name = row.querySelector('[data-experiment-name]').textContent.toLowerCase();
             const description = row.getAttribute('data-description')?.toLowerCase() || '';
-            
+
             if (name.includes(searchTerm) || description.includes(searchTerm)) {
                 row.style.display = '';
             } else {
@@ -120,7 +120,7 @@ class ExperimentsManager {
      */
     renderExperiments(experiments) {
         this.experimentsTable.innerHTML = '';
-        
+
         if (!experiments || experiments.length === 0) {
             this.experimentsTable.innerHTML = `
                 <tr>
@@ -132,21 +132,21 @@ class ExperimentsManager {
                     </td>
                 </tr>
             `;
-            
+
             // Add event listener to the create button
             document.getElementById('empty-create-btn')?.addEventListener('click', () => this.showCreateForm());
             return;
         }
-        
+
         experiments.forEach(experiment => {
             const variantsCount = experiment.variants.length;
             const createdDate = new Date(experiment.created_at).toLocaleDateString();
-            
+
             // Create table row
             const row = document.createElement('tr');
             row.setAttribute('data-experiment-id', experiment.experiment_id);
             row.setAttribute('data-description', experiment.description || '');
-            
+
             row.innerHTML = `
                 <td data-experiment-name>${experiment.name}</td>
                 <td>
@@ -175,11 +175,11 @@ class ExperimentsManager {
                     </div>
                 </td>
             `;
-            
+
             // Add event listeners
             row.querySelector('.view-btn').addEventListener('click', () => this.showExperimentDetails(experiment.experiment_id));
             row.querySelector('.edit-btn').addEventListener('click', () => this.showEditForm(experiment.experiment_id));
-            
+
             // Add status change listeners
             row.querySelectorAll('.status-option').forEach(option => {
                 option.addEventListener('click', (e) => {
@@ -187,7 +187,7 @@ class ExperimentsManager {
                     this.updateExperimentStatus(experiment.experiment_id, newStatus);
                 });
             });
-            
+
             this.experimentsTable.appendChild(row);
         });
     }
@@ -204,7 +204,7 @@ class ExperimentsManager {
             { value: 'paused', label: 'Pause' },
             { value: 'completed', label: 'Complete' }
         ];
-        
+
         return statuses
             .filter(status => status.value !== currentStatus)
             .map(status => `
@@ -225,200 +225,203 @@ class ExperimentsManager {
         try {
             const experiment = await this.api.getExperiment(experimentId);
             const stats = await this.api.getExperimentStats(experimentId);
-            
+
             const detailBody = document.getElementById('experiment-detail-body');
             detailBody.innerHTML = this.renderExperimentDetail(experiment, stats);
-            
+
             this.detailModal.show();
         } catch (error) {
             this.showError('Failed to load experiment details', error);
         }
     }
 
+
     /**
-     * Render experiment detail view
-     * @param {Object} experiment - Experiment data
-     * @param {Object} stats - Experiment statistics
-     * @returns {string} HTML for detail view
-     */
+ * Render experiment detail view
+ * @param {Object} experiment - Experiment data
+ * @param {Object} stats - Experiment statistics
+ * @returns {string} HTML for detail view
+ */
     renderExperimentDetail(experiment, stats) {
+        console.log("Displaying experiment details:", experiment); // Debug log
+
         const variantStats = stats.variant_stats || {};
         const createdDate = new Date(experiment.created_at).toLocaleDateString();
         const updatedDate = new Date(experiment.updated_at).toLocaleDateString();
-        
+
         // Calculate totals
         let totalAssignments = 0;
         let totalImpressions = 0;
         let totalConversions = 0;
-        
+
         Object.values(variantStats).forEach(variant => {
             totalAssignments += variant.assignments || 0;
             totalImpressions += variant.impression || 0;
             totalConversions += variant.conversion || 0;
         });
-        
+
         // Calculate weights total
         const totalWeight = experiment.variants.reduce((sum, variant) => sum + variant.weight, 0);
-        
+
         // Find control variant
         const controlVariant = experiment.variants.find(v => v.is_control) || experiment.variants[0];
-        
+
         return `
-            <div class="experiment-detail">
-                <div class="row mb-4">
-                    <div class="col-md-7">
-                        <h4>${experiment.name}</h4>
-                        <p class="text-muted">${experiment.description || 'No description'}</p>
-                    </div>
-                    <div class="col-md-5 text-md-end">
-                        <span class="status-label status-${experiment.status} me-2">
-                            ${experiment.status}
-                        </span>
-                        <small class="text-muted">
-                            Created: ${createdDate} | Updated: ${updatedDate}
-                        </small>
-                    </div>
+        <div class="experiment-detail">
+            <div class="row mb-4">
+                <div class="col-md-7">
+                    <h4>${experiment.name}</h4>
+                    <p class="text-muted">${experiment.description || 'No description'}</p>
                 </div>
-                
-                <!-- Statistical Parameters -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <h5 class="mb-3">Statistical Parameters</h5>
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="mb-3">
-                                            <label class="fw-bold">Base Rate</label>
-                                            <div>${experiment.base_rate ? (experiment.base_rate * 100).toFixed(2) + '%' : 'Not specified'}</div>
-                                        </div>
+                <div class="col-md-5 text-md-end">
+                    <span class="status-label status-${experiment.status} me-2">
+                        ${experiment.status}
+                    </span>
+                    <small class="text-muted">
+                        Created: ${createdDate} | Updated: ${updatedDate}
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Statistical Parameters -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="mb-3">Statistical Parameters</h5>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="fw-bold">Base Rate</label>
+                                        <div>${experiment.base_rate !== undefined && experiment.base_rate !== null ? (experiment.base_rate * 100).toFixed(2) + '%' : 'Not specified'}</div>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-3">
-                                            <label class="fw-bold">Min Detectable Effect</label>
-                                            <div>${experiment.min_detectable_effect ? (experiment.min_detectable_effect * 100).toFixed(2) + '%' : 'Not specified'}</div>
-                                        </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="fw-bold">Min Detectable Effect</label>
+                                        <div>${experiment.min_detectable_effect !== undefined && experiment.min_detectable_effect !== null ? (experiment.min_detectable_effect * 100).toFixed(2) + '%' : 'Not specified'}</div>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-3">
-                                            <label class="fw-bold">Min Sample Size</label>
-                                            <div>${experiment.min_sample_size_per_group || 'Not specified'}</div>
-                                        </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="fw-bold">Min Sample Size</label>
+                                        <div>${experiment.min_sample_size_per_group || 'Not specified'}</div>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-3">
-                                            <label class="fw-bold">Confidence Level</label>
-                                            <div>${experiment.confidence_level ? (experiment.confidence_level * 100).toFixed(0) + '%' : '95%'}</div>
-                                        </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="fw-bold">Confidence Level</label>
+                                        <div>${experiment.confidence_level ? (experiment.confidence_level * 100).toFixed(0) + '%' : '95%'}</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="stat-card bg-light">
-                            <div class="stat-title">Assignments</div>
-                            <div class="stat-value">${totalAssignments}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="stat-card bg-light">
-                            <div class="stat-title">Impressions</div>
-                            <div class="stat-value">${totalImpressions}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="stat-card bg-light">
-                            <div class="stat-title">Conversions</div>
-                            <div class="stat-value">${totalConversions}</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <h5 class="mb-3">Variants</h5>
-                <div class="variant-distribution mb-4">
-                    ${experiment.variants.map(variant => {
-                        const weight = variant.weight;
-                        const percentage = (weight / totalWeight) * 100;
-                        const isControl = variant.is_control ? ' (Control)' : '';
-                        return `
-                            <div class="variant-segment ${variant.is_control ? 'bg-secondary' : 'bg-primary'}" 
-                                style="width: ${percentage}%; opacity: ${0.5 + (percentage/200)}"
-                                title="${variant.name}${isControl}: ${weight} (${percentage.toFixed(1)}%)">
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-                
-                <div class="variants-table">
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Variant</th>
-                                    <th>Weight</th>
-                                    <th>Assignments</th>
-                                    <th>Impressions</th>
-                                    <th>Conversions</th>
-                                    <th>Conv. Rate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${experiment.variants.map(variant => {
-                                    const stats = variantStats[variant.name] || {};
-                                    const assignments = stats.assignments || 0;
-                                    const impressions = stats.impression || 0;
-                                    const conversions = stats.conversion || 0;
-                                    const convRate = impressions > 0 
-                                        ? ((conversions / impressions) * 100).toFixed(2) + '%' 
-                                        : '-';
-                                    const isControlBadge = variant.is_control 
-                                        ? '<span class="badge bg-secondary ms-2">Control</span>' 
-                                        : '';
-                                        
-                                    return `
-                                        <tr>
-                                            <td>
-                                                <strong>${variant.name}</strong>${isControlBadge}
-                                                ${variant.description ? `<div class="small text-muted">${variant.description}</div>` : ''}
-                                            </td>
-                                            <td>${variant.weight}</td>
-                                            <td>${assignments}</td>
-                                            <td>${impressions}</td>
-                                            <td>${conversions}</td>
-                                            <td>${convRate}</td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <h5 class="mb-3">Population Settings</h5>
-                        <p>
-                            ${experiment.total_population 
-                                ? `Limited to ${experiment.total_population} users` 
-                                : 'Unlimited population (no user limit set)'}
-                        </p>
-                    </div>
-                </div>
-                
-                ${experiment.additional_features ? `
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <h5 class="mb-3">Additional Features</h5>
-                        <pre class="bg-light p-3">${JSON.stringify(experiment.additional_features, null, 2)}</pre>
-                    </div>
-                </div>
-                ` : ''}
             </div>
-        `;
+            
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card bg-light">
+                        <div class="stat-title">Assignments</div>
+                        <div class="stat-value">${totalAssignments}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card bg-light">
+                        <div class="stat-title">Impressions</div>
+                        <div class="stat-value">${totalImpressions}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card bg-light">
+                        <div class="stat-title">Conversions</div>
+                        <div class="stat-value">${totalConversions}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <h5 class="mb-3">Variants</h5>
+            <div class="variant-distribution mb-4">
+                ${experiment.variants.map(variant => {
+            const weight = variant.weight;
+            const percentage = (weight / totalWeight) * 100;
+            const isControl = variant.is_control ? ' (Control)' : '';
+            return `
+                        <div class="variant-segment ${variant.is_control ? 'bg-secondary' : 'bg-primary'}" 
+                            style="width: ${percentage}%; opacity: ${0.5 + (percentage / 200)}"
+                            title="${variant.name}${isControl}: ${weight} (${percentage.toFixed(1)}%)">
+                        </div>
+                    `;
+        }).join('')}
+            </div>
+            
+            <div class="variants-table">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Variant</th>
+                                <th>Weight</th>
+                                <th>Assignments</th>
+                                <th>Impressions</th>
+                                <th>Conversions</th>
+                                <th>Conv. Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${experiment.variants.map(variant => {
+            const stats = variantStats[variant.name] || {};
+            const assignments = stats.assignments || 0;
+            const impressions = stats.impression || 0;
+            const conversions = stats.conversion || 0;
+            const convRate = impressions > 0
+                ? ((conversions / impressions) * 100).toFixed(2) + '%'
+                : '-';
+            const isControlBadge = variant.is_control
+                ? '<span class="badge bg-secondary ms-2">Control</span>'
+                : '';
+
+            return `
+                                    <tr>
+                                        <td>
+                                            <strong>${variant.name}</strong>${isControlBadge}
+                                            ${variant.description ? `<div class="small text-muted">${variant.description}</div>` : ''}
+                                        </td>
+                                        <td>${variant.weight}</td>
+                                        <td>${assignments}</td>
+                                        <td>${impressions}</td>
+                                        <td>${conversions}</td>
+                                        <td>${convRate}</td>
+                                    </tr>
+                                `;
+        }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h5 class="mb-3">Population Settings</h5>
+                    <p>
+                        ${experiment.total_population
+                ? `Limited to ${experiment.total_population} users`
+                : 'Unlimited population (no user limit set)'}
+                    </p>
+                </div>
+            </div>
+            
+            ${experiment.additional_features ? `
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h5 class="mb-3">Additional Features</h5>
+                    <pre class="bg-light p-3">${JSON.stringify(experiment.additional_features, null, 2)}</pre>
+                </div>
+            </div>
+            ` : ''}
+        </div>
+    `;
     }
 
     /**
@@ -435,29 +438,55 @@ class ExperimentsManager {
      * Show edit experiment form
      * @param {string} experimentId - Experiment ID
      */
+    /**
+ * Show edit experiment form
+ * @param {string} experimentId - Experiment ID
+ */
     async showEditForm(experimentId) {
         try {
             const experiment = await this.api.getExperiment(experimentId);
-            
+            console.log("Retrieved experiment data:", experiment); // Debug log
+
             this.resetForm();
             this.formMode.value = 'edit';
             document.getElementById('experiment-form-title').textContent = 'Edit Experiment';
-            
+
             // Populate form with experiment data
             this.experimentName.value = experiment.name;
             this.experimentName.readOnly = true; // Cannot change experiment name once created
             this.experimentDescription.value = experiment.description || '';
             this.experimentPopulation.value = experiment.total_population || '';
-            
+
+            // Populate statistical parameters
+            if (this.baseRate) this.baseRate.value = experiment.base_rate || '';
+            if (this.minDetectableEffect) this.minDetectableEffect.value = experiment.min_detectable_effect || '';
+            if (this.minSampleSize) this.minSampleSize.value = experiment.min_sample_size_per_group || '';
+            if (this.confidenceLevel && experiment.confidence_level) {
+                this.confidenceLevel.value = experiment.confidence_level;
+            }
+
+            // Populate additional features
+            if (this.additionalFeatures && experiment.additional_features) {
+                this.additionalFeatures.value = JSON.stringify(experiment.additional_features, null, 2);
+            }
+
             // Add variant fields
             this.variantsContainer.innerHTML = '';
             experiment.variants.forEach(variant => {
-                this.addVariantField(variant.name, variant.description, variant.weight);
+                this.addVariantField(
+                    variant.name,
+                    variant.description,
+                    variant.weight,
+                    variant.is_control || false
+                );
             });
-            
+
             // Store experiment ID for updates
             this.experimentForm.setAttribute('data-experiment-id', experiment.experiment_id);
-            
+
+            // Update recommended sample size if applicable
+            this.updateRecommendedSampleSize();
+
             this.formModal.show();
         } catch (error) {
             this.showError('Failed to load experiment for editing', error);
@@ -472,83 +501,118 @@ class ExperimentsManager {
         this.experimentName.readOnly = false;
         this.variantsContainer.innerHTML = '';
         this.experimentForm.removeAttribute('data-experiment-id');
-        
+
         // Add two default variant fields
         this.addVariantField('control');
         this.addVariantField('treatment');
     }
 
-    /**
-     * Add a variant field to the form
-     * @param {string} name - Variant name
-     * @param {string} description - Variant description
-     * @param {number} weight - Variant weight
-     */
-    addVariantField(name = '', description = '', weight = 1) {
-        const variantId = Date.now();
-        const variantElement = document.createElement('div');
-        variantElement.className = 'variant-item mb-3';
-        variantElement.innerHTML = `
-            <div class="row">
-                <div class="col-md-4">
-                    <label class="form-label">Name</label>
-                    <input type="text" class="form-control variant-name" value="${name}" required
-                           pattern="[a-zA-Z0-9_-]+" title="Only alphanumeric characters, hyphens, and underscores">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Description</label>
-                    <input type="text" class="form-control variant-description" value="${description}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Weight</label>
-                    <input type="number" class="form-control variant-weight" value="${weight}" min="1" required>
+
+/**
+ * Add a variant field to the form
+ * @param {string} name - Variant name
+ * @param {string} description - Variant description
+ * @param {number} weight - Variant weight
+ * @param {boolean} isControl - Whether this is the control variant
+ */
+addVariantField(name = '', description = '', weight = 1, isControl = false) {
+    const variantId = Date.now();
+    const variantElement = document.createElement('div');
+    variantElement.className = 'variant-item mb-3';
+    variantElement.innerHTML = `
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-control variant-name" value="${name}" required
+                       pattern="[a-zA-Z0-9_-]+" title="Only alphanumeric characters, hyphens, and underscores">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Description</label>
+                <input type="text" class="form-control variant-description" value="${description}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Weight</label>
+                <input type="number" class="form-control variant-weight" value="${weight}" min="1" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Control</label>
+                <div class="form-check mt-2">
+                    <input class="form-check-input variant-control" type="radio" name="control-variant" ${isControl ? 'checked' : ''}>
+                    <label class="form-check-label">Control Group</label>
                 </div>
             </div>
-            <span class="remove-variant" title="Remove Variant">×</span>
-        `;
-        
-        // Add remove functionality
-        variantElement.querySelector('.remove-variant').addEventListener('click', () => {
-            // Only remove if there are more than 2 variants
-            if (this.variantsContainer.children.length > 2) {
-                variantElement.remove();
-            } else {
-                alert('An experiment must have at least 2 variants.');
-            }
-        });
-        
-        this.variantsContainer.appendChild(variantElement);
-    }
+        </div>
+        <span class="remove-variant" title="Remove Variant">×</span>
+    `;
+    
+    // Add remove functionality
+    variantElement.querySelector('.remove-variant').addEventListener('click', () => {
+        // Only remove if there are more than 2 variants
+        if (this.variantsContainer.children.length > 2) {
+            variantElement.remove();
+        } else {
+            alert('An experiment must have at least 2 variants.');
+        }
+    });
+    
+    // Add control radio button change handler
+    variantElement.querySelector('.variant-control').addEventListener('change', (e) => {
+        if (e.target.checked) {
+            // Uncheck all other control radio buttons
+            this.variantsContainer.querySelectorAll('.variant-control').forEach(radio => {
+                if (radio !== e.target) {
+                    radio.checked = false;
+                }
+            });
+        }
+    });
+    
+    this.variantsContainer.appendChild(variantElement);
+}
 
     /**
      * Save experiment (create or update)
      */
+    /**
+ * Save experiment (create or update)
+ */
     async saveExperiment() {
         try {
             if (!this.experimentForm.checkValidity()) {
                 this.experimentForm.reportValidity();
                 return;
             }
-            
+
             // Collect variant data
             const variants = [];
             const variantItems = this.variantsContainer.querySelectorAll('.variant-item');
-            
+
             variantItems.forEach(item => {
                 variants.push({
                     name: item.querySelector('.variant-name').value,
                     description: item.querySelector('.variant-description').value,
-                    weight: parseInt(item.querySelector('.variant-weight').value, 10)
+                    weight: parseInt(item.querySelector('.variant-weight').value, 10),
+                    is_control: item.querySelector('.variant-control').checked
                 });
             });
-            
+
             // Validate variant names are unique
             const variantNames = variants.map(v => v.name);
             if (new Set(variantNames).size !== variantNames.length) {
                 alert('Variant names must be unique.');
                 return;
             }
-            
+
+            // Ensure exactly one control variant
+            const controlVariants = variants.filter(v => v.is_control);
+            if (controlVariants.length === 0) {
+                alert('You must designate one variant as the control group.');
+                return;
+            } else if (controlVariants.length > 1) {
+                alert('Only one variant can be designated as the control group.');
+                return;
+            }
+
             // Build experiment data
             const experimentData = {
                 name: this.experimentName.value,
@@ -556,12 +620,41 @@ class ExperimentsManager {
                 variants: variants,
                 status: 'draft' // Default to draft for new experiments
             };
-            
+
+            // Add statistical parameters if provided
+            if (this.baseRate && this.baseRate.value) {
+                experimentData.base_rate = parseFloat(this.baseRate.value);
+            }
+
+            if (this.minDetectableEffect && this.minDetectableEffect.value) {
+                experimentData.min_detectable_effect = parseFloat(this.minDetectableEffect.value);
+            }
+
+            if (this.minSampleSize && this.minSampleSize.value) {
+                experimentData.min_sample_size_per_group = parseInt(this.minSampleSize.value, 10);
+            }
+
+            if (this.confidenceLevel && this.confidenceLevel.value) {
+                experimentData.confidence_level = parseFloat(this.confidenceLevel.value);
+            }
+
             // Add total population if provided
             if (this.experimentPopulation.value) {
                 experimentData.total_population = parseInt(this.experimentPopulation.value, 10);
             }
-            
+
+            // Process additional features if provided
+            if (this.additionalFeatures && this.additionalFeatures.value.trim()) {
+                try {
+                    experimentData.additional_features = JSON.parse(this.additionalFeatures.value);
+                } catch (e) {
+                    alert('Additional features must be valid JSON. Please check the format.');
+                    return;
+                }
+            }
+
+            console.log("Saving experiment data:", experimentData); // Debug log
+
             // Create or update
             if (this.formMode.value === 'create') {
                 await this.api.createExperiment(experimentData);
@@ -572,7 +665,7 @@ class ExperimentsManager {
                 await this.api.updateExperiment(experimentId, experimentData);
                 this.showSuccess('Experiment updated successfully');
             }
-            
+
             // Close modal and reload
             this.formModal.hide();
             this.loadExperiments();
@@ -635,7 +728,7 @@ class ExperimentsManager {
     showError(message, error) {
         console.error(message, error);
         let errorDetails = error.message;
-        
+
         // Try to show more helpful error details if available
         if (error.response) {
             try {
@@ -644,7 +737,7 @@ class ExperimentsManager {
                 errorDetails = `Status: ${error.response.status} - ${error.response.statusText}`;
             }
         }
-        
+
         alert(`${message}: ${errorDetails}`);
     }
 }
