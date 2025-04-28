@@ -95,53 +95,95 @@
     </div>
 
     <!-- Create/Edit Experiment Modal -->
-    <div class="modal fade" id="experiment-form-modal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="experiment-form-title">Create Experiment</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="experiment-form">
-                        <input type="hidden" id="form-mode" value="create">
-                        
-                        <div class="mb-3">
-                            <label for="experiment-name" class="form-label">Experiment Name</label>
-                            <input type="text" class="form-control" id="experiment-name" required 
-                                   pattern="[a-zA-Z0-9_-]+" title="Only alphanumeric characters, hyphens, and underscores allowed">
-                            <div class="form-text">Only alphanumeric characters, hyphens, and underscores allowed.</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="experiment-description" class="form-label">Description</label>
-                            <textarea class="form-control" id="experiment-description" rows="3"></textarea>
-                        </div>
+    <!-- Updated Experiment Form Section -->
+<div class="modal fade" id="experiment-form-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="experiment-form-title">Create Experiment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="experiment-form">
+                    <input type="hidden" id="form-mode" value="create">
+                    
+                    <div class="mb-3">
+                        <label for="experiment-name" class="form-label">Experiment Name</label>
+                        <input type="text" class="form-control" id="experiment-name" required 
+                                pattern="[a-zA-Z0-9_-]+" title="Only alphanumeric characters, hyphens, and underscores allowed">
+                        <div class="form-text">Only alphanumeric characters, hyphens, and underscores allowed.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="experiment-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="experiment-description" rows="3"></textarea>
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="experiment-population" class="form-label">Total Population (optional)</label>
-                            <input type="number" class="form-control" id="experiment-population" min="1">
-                            <div class="form-text">Maximum number of users in the experiment. Leave empty for unlimited.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Variants</label>
-                            <div id="variants-container">
-                                <!-- Variant fields will be added here -->
+                    <!-- Statistical parameters section -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Statistical Parameters</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="base-rate" class="form-label">Base Rate (0-1)</label>
+                                <input type="number" class="form-control" id="base-rate" min="0" max="1" step="0.01" placeholder="e.g., 0.2 for 20%">
+                                <div class="form-text">The current conversion rate for the control group</div>
                             </div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-variant-btn">
-                                + Add Variant
-                            </button>
+                            <div class="col-md-6">
+                                <label for="min-detectable-effect" class="form-label">Min Detectable Effect (0-1)</label>
+                                <input type="number" class="form-control" id="min-detectable-effect" min="0.01" max="1" step="0.01" placeholder="e.g., 0.05 for 5%">
+                                <div class="form-text">The smallest improvement you want to detect</div>
+                            </div>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="save-experiment-btn">Save</button>
-                </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="min-sample-size" class="form-label">Min Sample Size Per Group</label>
+                            <input type="number" class="form-control" id="min-sample-size" min="1" placeholder="e.g., 1000">
+                            <div class="form-text">Minimum users needed in each variant for statistical validity</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="confidence-level" class="form-label">Confidence Level</label>
+                            <select class="form-select" id="confidence-level">
+                                <option value="0.9">90%</option>
+                                <option value="0.95" selected>95%</option>
+                                <option value="0.99">99%</option>
+                            </select>
+                            <div class="form-text">Statistical confidence for results</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="experiment-population" class="form-label">Total Population (optional)</label>
+                        <input type="number" class="form-control" id="experiment-population" min="1">
+                        <div class="form-text">Maximum number of users in the experiment. Leave empty for unlimited.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="mb-3">Variants</h6>
+                        <p class="form-text mb-3">Define at least two variants (control and treatment). Mark one as the control group.</p>
+                        <div id="variants-container">
+                            <!-- Variant fields will be added here -->
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-variant-btn">
+                            + Add Variant
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="additional-features" class="form-label">Additional Features (Optional JSON)</label>
+                        <textarea class="form-control" id="additional-features" rows="2" placeholder='{"custom_param": "value"}'></textarea>
+                        <div class="form-text">Additional configuration as JSON</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-experiment-btn">Save</button>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Bootstrap & Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

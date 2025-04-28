@@ -1,6 +1,3 @@
-/**
- * Experiments management functionality
- */
 class ExperimentsManager {
     constructor(apiClient) {
         this.api = apiClient;
@@ -21,6 +18,13 @@ class ExperimentsManager {
         this.addVariantBtn = document.getElementById('add-variant-btn');
         this.saveExperimentBtn = document.getElementById('save-experiment-btn');
         
+        // New statistical parameter fields
+        this.baseRate = document.getElementById('base-rate');
+        this.minDetectableEffect = document.getElementById('min-detectable-effect');
+        this.minSampleSize = document.getElementById('min-sample-size');
+        this.confidenceLevel = document.getElementById('confidence-level');
+        this.additionalFeatures = document.getElementById('additional-features');
+        
         this.init();
     }
 
@@ -40,6 +44,41 @@ class ExperimentsManager {
         
         // Add initial variant fields
         this.resetForm();
+        
+        // Set up sample size calculator
+        if (this.baseRate && this.minDetectableEffect) {
+            this.baseRate.addEventListener('change', () => this.updateRecommendedSampleSize());
+            this.minDetectableEffect.addEventListener('change', () => this.updateRecommendedSampleSize());
+            this.confidenceLevel.addEventListener('change', () => this.updateRecommendedSampleSize());
+        }
+    }
+
+    /**
+     * Calculate and update the recommended sample size based on statistical parameters
+     */
+    updateRecommendedSampleSize() {
+        const baseRate = parseFloat(this.baseRate.value);
+        const mde = parseFloat(this.minDetectableEffect.value);
+        const confidence = parseFloat(this.confidenceLevel.value);
+        
+        if (!isNaN(baseRate) && !isNaN(mde) && mde > 0) {
+            // Simple sample size calculation
+            // For a proper implementation, you'd use a more accurate statistical formula
+            const z = confidence === 0.99 ? 2.576 : 
+                   confidence === 0.95 ? 1.96 : 
+                   confidence === 0.9 ? 1.645 : 1.96;
+                   
+            const p = baseRate;
+            const d = mde;
+            
+            // Sample size formula for comparing two proportions
+            const sampleSize = Math.ceil(2 * p * (1-p) * (z/d)**2);
+            
+            // Update the sample size field
+            if (this.minSampleSize && sampleSize > 0) {
+                this.minSampleSize.placeholder = `Recommended: ~${sampleSize}`;
+            }
+        }
     }
 
     /**
@@ -221,6 +260,9 @@ class ExperimentsManager {
         // Calculate weights total
         const totalWeight = experiment.variants.reduce((sum, variant) => sum + variant.weight, 0);
         
+        // Find control variant
+        const controlVariant = experiment.variants.find(v => v.is_control) || experiment.variants[0];
+        
         return `
             <div class="experiment-detail">
                 <div class="row mb-4">
@@ -235,6 +277,43 @@ class ExperimentsManager {
                         <small class="text-muted">
                             Created: ${createdDate} | Updated: ${updatedDate}
                         </small>
+                    </div>
+                </div>
+                
+                <!-- Statistical Parameters -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="mb-3">Statistical Parameters</h5>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Base Rate</label>
+                                            <div>${experiment.base_rate ? (experiment.base_rate * 100).toFixed(2) + '%' : 'Not specified'}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Min Detectable Effect</label>
+                                            <div>${experiment.min_detectable_effect ? (experiment.min_detectable_effect * 100).toFixed(2) + '%' : 'Not specified'}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Min Sample Size</label>
+                                            <div>${experiment.min_sample_size_per_group || 'Not specified'}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Confidence Level</label>
+                                            <div>${experiment.confidence_level ? (experiment.confidence_level * 100).toFixed(0) + '%' : '95%'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -264,10 +343,11 @@ class ExperimentsManager {
                     ${experiment.variants.map(variant => {
                         const weight = variant.weight;
                         const percentage = (weight / totalWeight) * 100;
+                        const isControl = variant.is_control ? ' (Control)' : '';
                         return `
-                            <div class="variant-segment bg-primary" 
+                            <div class="variant-segment ${variant.is_control ? 'bg-secondary' : 'bg-primary'}" 
                                 style="width: ${percentage}%; opacity: ${0.5 + (percentage/200)}"
-                                title="${variant.name}: ${weight} (${percentage.toFixed(1)}%)">
+                                title="${variant.name}${isControl}: ${weight} (${percentage.toFixed(1)}%)">
                             </div>
                         `;
                     }).join('')}
@@ -295,11 +375,14 @@ class ExperimentsManager {
                                     const convRate = impressions > 0 
                                         ? ((conversions / impressions) * 100).toFixed(2) + '%' 
                                         : '-';
+                                    const isControlBadge = variant.is_control 
+                                        ? '<span class="badge bg-secondary ms-2">Control</span>' 
+                                        : '';
                                         
                                     return `
                                         <tr>
                                             <td>
-                                                <strong>${variant.name}</strong>
+                                                <strong>${variant.name}</strong>${isControlBadge}
                                                 ${variant.description ? `<div class="small text-muted">${variant.description}</div>` : ''}
                                             </td>
                                             <td>${variant.weight}</td>
@@ -325,6 +408,15 @@ class ExperimentsManager {
                         </p>
                     </div>
                 </div>
+                
+                ${experiment.additional_features ? `
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5 class="mb-3">Additional Features</h5>
+                        <pre class="bg-light p-3">${JSON.stringify(experiment.additional_features, null, 2)}</pre>
+                    </div>
+                </div>
+                ` : ''}
             </div>
         `;
     }

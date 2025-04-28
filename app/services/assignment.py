@@ -1,4 +1,4 @@
-# app/services/assignment.py
+# app/services/assignment.py - Updated
 import hashlib
 import logging
 from typing import Dict, List, Optional, Tuple
@@ -72,9 +72,11 @@ class AssignmentService:
         if not variants:
             raise ValueError(f"Experiment '{experiment_id}' has no variants")
         
+        # Identify control variant - either the one marked as control or the first one
+        control_variant = next((v["name"] for v in variants if v.get("is_control", False)), variants[0]["name"])
+        
         # Check if experiment has reached population limit
         experiment_full = False
-        default_variant = variants[0]["name"]  # Use first variant as default
         
         # Only check population limit if total_population is set
         if experiment.get("total_population"):
@@ -91,14 +93,15 @@ class AssignmentService:
             if real_assignment_count >= experiment.get("total_population", 0):
                 experiment_full = True
                 
-                # Create assignment record with default variant and special flag
+                # Create assignment record with control variant and special flag
                 assignment = {
                     "subid": subid,
                     "experiment_id": experiment_id,
-                    "variant": default_variant,
+                    "variant": control_variant,
                     "created_at": datetime.utcnow().isoformat(),
                     "is_default_assignment": True,
-                    "reason": "experiment_population_limit_reached"
+                    "reason": "experiment_population_limit_reached",
+                    "status": "experiment_population_limit_reached"
                 }
                 
                 # Save to database (we still save these to keep track of overflow)
