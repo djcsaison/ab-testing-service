@@ -5,6 +5,47 @@ class ApiClient {
     constructor(baseUrl = '') {
         this.baseUrl = baseUrl;
         this.apiPath = '/api';
+        this.credentials = null;
+    }
+
+    /**
+     * Set authentication credentials
+     * @param {string} username - Username for basic auth
+     * @param {string} password - Password for basic auth
+     */
+    setCredentials(username, password) {
+        this.credentials = btoa(`${username}:${password}`);
+        // Store credentials in sessionStorage for persistence across page reloads
+        sessionStorage.setItem('ab_testing_auth', this.credentials);
+    }
+
+    /**
+     * Load credentials from session storage
+     * @returns {boolean} - Whether credentials were loaded
+     */
+    loadCredentials() {
+        const savedAuth = sessionStorage.getItem('ab_testing_auth');
+        if (savedAuth) {
+            this.credentials = savedAuth;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Clear stored credentials
+     */
+    clearCredentials() {
+        this.credentials = null;
+        sessionStorage.removeItem('ab_testing_auth');
+    }
+    
+    /**
+     * Check if user is authenticated
+     * @returns {boolean} - Whether user has credentials set
+     */
+    isAuthenticated() {
+        return this.credentials !== null;
     }
 
     /**
@@ -22,6 +63,11 @@ class ApiClient {
             ...options.headers
         };
 
+        // Add authentication if credentials are set
+        if (this.credentials) {
+            headers['Authorization'] = `Basic ${this.credentials}`;
+        }
+
         const config = {
             ...options,
             headers
@@ -29,6 +75,12 @@ class ApiClient {
 
         try {
             const response = await fetch(url, config);
+            
+            // Handle authentication errors
+            if (response.status === 401) {
+                this.clearCredentials();
+                throw new Error('Authentication failed. Please log in again.');
+            }
             
             // Handle non-JSON responses for 204 No Content
             if (response.status === 204) {
@@ -45,6 +97,37 @@ class ApiClient {
         } catch (error) {
             console.error(`API request failed: ${error.message}`);
             throw error;
+        }
+    }
+
+    /**
+     * Log in using basic authentication
+     * @param {string} username - Username
+     * @param {string} password - Password
+     * @returns {Promise<boolean>} - Whether login was successful
+     */
+    async login(username, password) {
+        try {
+            // Set temporary credentials for this request
+            const tempCredentials = btoa(`${username}:${password}`);
+            
+            // Test credentials with a simple request
+            const response = await fetch(`${this.baseUrl}${this.apiPath}/experiments`, {
+                headers: {
+                    'Authorization': `Basic ${tempCredentials}`
+                }
+            });
+            
+            if (response.ok) {
+                // Save credentials if successful
+                this.setCredentials(username, password);
+                return true;
+            } else {
+                return false;
+            }
+        } catch (error) {
+            console.error('Login failed:', error);
+            return false;
         }
     }
 

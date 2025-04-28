@@ -8,14 +8,35 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Application settings
       - DEBUG=True
+      - ENVIRONMENT=development
+      - APP_NAME=A/B Testing Service
+
+      # Database settings
       - AWS_REGION=us-east-1
       - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
       - EXPERIMENTS_TABLE=ab-testing-experiments
       - ASSIGNMENTS_TABLE=ab-testing-assignments
       - EVENTS_TABLE=ab-testing-events
+      
+      # Redis settings
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_SSL=false
+      
+      # Authentication settings
+      - ENABLE_BASIC_AUTH=true
+      - BASIC_AUTH_USERNAME=admin
+      - BASIC_AUTH_PASSWORD=password
+      
+      # Cache settings
+      - ASSIGNMENT_CACHE_TTL=3600
+      - EXPERIMENT_CACHE_TTL=300
+      
+      # CORS settings
+      - ALLOWED_ORIGINS=*
     volumes:
       - ./:/app
     depends_on:
@@ -23,6 +44,12 @@ services:
       - dynamodb-local
     networks:
       - ab-testing-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   redis:
     image: redis:alpine
@@ -34,6 +61,11 @@ services:
       - ab-testing-network
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   dynamodb-local:
     image: amazon/dynamodb-local:latest
@@ -59,6 +91,25 @@ services:
       - dynamodb-local
     networks:
       - ab-testing-network
+
+  # Run the table setup script during initial deployment
+  setup:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: ab-testing-setup
+    command: python scripts/setup_tables.py
+    environment:
+      - AWS_REGION=us-east-1
+      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+      - EXPERIMENTS_TABLE=ab-testing-experiments
+      - ASSIGNMENTS_TABLE=ab-testing-assignments
+      - EVENTS_TABLE=ab-testing-events
+    depends_on:
+      - dynamodb-local
+    networks:
+      - ab-testing-network
+    restart: on-failure
 
 volumes:
   redis-data:

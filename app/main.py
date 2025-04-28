@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -10,6 +10,7 @@ from pathlib import Path
 from .config import settings
 from .api import experiments, assignments, events
 from .db.redis import redis_client
+from .middleware.basic_auth import BasicAuthMiddleware, authenticate_swagger
 
 # Configure logging
 logging.basicConfig(
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize connections
-    logger.info("Starting up AB Testing Service")
+    logger.info(f"Starting up AB Testing Service in {settings.ENVIRONMENT.value} environment")
     try:
         await redis_client.connect()
         logger.info("Redis connection established")
@@ -45,19 +46,24 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="A/B Testing service with FastAPI and DynamoDB",
     lifespan=lifespan,
+    # Protect Swagger UI with basic auth in non-development environments or if explicitly enabled
     docs_url="/api/docs",
     redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json"
+    openapi_url="/api/openapi.json",
+    dependencies=[Depends(authenticate_swagger)] if settings.should_authenticate() else []
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update with your frontend domain in production
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add Basic Auth middleware if enabled
+app.add_middleware(BasicAuthMiddleware)
 
 # Add request ID and logging middleware
 @app.middleware("http")
@@ -124,6 +130,7 @@ async def health_check():
     return {
         "status": "healthy" if is_healthy else "unhealthy",
         "version": settings.APP_VERSION,
+        "environment": settings.ENVIRONMENT.value,
         "dependencies": {
             "redis": "ok" if redis_ok else "error"
         }
@@ -159,7 +166,8 @@ async def api_root():
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "description": "A/B Testing Service API",
-        "docs": "/api/docs"
+        "docs": "/api/docs",
+        "environment": settings.ENVIRONMENT.value
     }
 
 # Start the application with Uvicorn when run directly

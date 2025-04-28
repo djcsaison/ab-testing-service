@@ -6,7 +6,13 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    # Default auth settings (override these in production)
+    ENABLE_BASIC_AUTH=true \
+    BASIC_AUTH_USERNAME=admin \
+    BASIC_AUTH_PASSWORD=password \
+    # Environment (development, staging, production)
+    ENVIRONMENT=development
 
 # Install system dependencies
 RUN apt-get update \
@@ -23,6 +29,11 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # Copy application code
 COPY . .
+
+# Create a non-root user to run the application
+RUN useradd -m appuser
+RUN chown -R appuser:appuser /app
+USER appuser
 
 # Expose port
 EXPOSE 8000
