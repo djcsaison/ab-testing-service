@@ -123,3 +123,56 @@
     align-items: center;
     height: 200px;
 }
+
+/* Statistical analysis styles */
+.table-statistical {
+    font-size: 0.9rem;
+}
+
+.table-statistical th {
+    background-color: #f8f9fa;
+}
+
+.status-winning {
+    color: #0f5132;
+}
+
+.status-losing {
+    color: #842029;
+}
+
+.status-inconclusive {
+    color: #6c757d;
+}
+
+.progress {
+    background-color: #e9ecef;
+    border-radius: 0.25rem;
+}
+
+.progress-bar {
+    background-color: #0d6efd;
+    color: white;
+    text-align: center;
+    line-height: 20px;
+    font-size: 0.8rem;
+}
+
+.metric-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.metric-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+}

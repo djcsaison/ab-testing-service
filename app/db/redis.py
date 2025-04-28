@@ -15,7 +15,7 @@ class RedisClient:
             db=settings.REDIS_DB,
             decode_responses=True
         )
-        self.redis = redis.Redis.from_pool(self.pool)
+        self.redis = redis.Redis(connection_pool=self.pool)
     
     async def connect(self):
         """Initialize connection and ping Redis to ensure it's available"""

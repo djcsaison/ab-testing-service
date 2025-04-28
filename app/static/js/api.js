@@ -111,6 +111,10 @@ class ApiClient {
             queryParams.append('include_assignments', options.includeAssignments);
         }
         
+        if (options.includeAnalysis !== undefined) {
+            queryParams.append('include_analysis', options.includeAnalysis);
+        }
+        
         const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
         
         return this.request(`/experiments/${experimentId}/stats${queryString}`, { 

@@ -95,23 +95,30 @@ async def update_experiment_status(
 async def get_experiment_stats(
     experiment_id: str, 
     event_types: Optional[List[str]] = Query(None),
-    include_assignments: bool = Query(True, description="Include assignment counts in statistics")
+    include_assignments: bool = Query(True, description="Include assignment counts in statistics"),
+    include_analysis: bool = Query(True, description="Include statistical analysis")
 ):
     """
-    Get experiment statistics by variant
+    Get experiment statistics by variant with statistical analysis
     
-    By default focuses on assignment counts with optional event data
+    By default includes:
+    - Assignment counts
+    - Event counts (impressions, conversions)
+    - Statistical analysis (conversion rates, confidence intervals, p-values)
+    - Significance determination (winning, losing, inconclusive)
     """
     try:
         stats = await experiment_service.get_experiment_stats(
             experiment_id, 
             event_types,
-            include_assignments
+            include_assignments,
+            include_analysis
         )
-        return {
-            "experiment_id": experiment_id,
-            "variant_stats": stats
-        }
+        
+        # Add experiment_id to the response for backward compatibility
+        stats["experiment_id"] = experiment_id
+        
+        return stats
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

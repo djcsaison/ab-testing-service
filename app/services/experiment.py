@@ -6,6 +6,7 @@ from datetime import datetime
 from ..models.experiment import ExperimentCreate, ExperimentUpdate, ExperimentStatus
 from ..db.dynamodb import dynamodb_client
 from ..db.redis import redis_client
+from ..services.statistics import statistics_service
 
 logger = logging.getLogger(__name__)
 
@@ -93,25 +94,40 @@ class ExperimentService:
     async def get_experiment_stats(
         experiment_name: str,
         event_types: Optional[List[str]] = None,
-        include_assignments: bool = True
-    ) -> Dict[str, Dict[str, int]]:
+        include_assignments: bool = True,
+        include_analysis: bool = True
+    ) -> Dict[str, Any]:
         """
-        Get comprehensive experiment statistics by variant
+        Get comprehensive experiment statistics by variant with statistical analysis
         
         Parameters:
             experiment_name: The experiment name (which is also the experiment_id)
             event_types: Optional list of event types to include
             include_assignments: Whether to include assignment counts (default: True)
+            include_analysis: Whether to include statistical analysis (default: True)
         """
         # Get the experiment to know the variants
         experiment = await ExperimentService.get_experiment(experiment_name)
         if not experiment:
             raise ValueError(f"Experiment '{experiment_name}' not found")
             
-        variants = [v["name"] for v in experiment.get("variants", [])]
+        variants = experiment.get("variants", [])
+        variant_names = [v["name"] for v in variants]
+        
+        # Find control variant
+        control_variant = next((v["name"] for v in variants if v.get("is_control", False)), variant_names[0] if variant_names else None)
         
         # Initialize result structure
-        results = {variant: {} for variant in variants}
+        results = {
+            "variants": {variant: {} for variant in variant_names},
+            "control_variant": control_variant,
+            "metadata": {
+                "base_rate": experiment.get("base_rate"),
+                "min_detectable_effect": experiment.get("min_detectable_effect"),
+                "min_sample_size_per_group": experiment.get("min_sample_size_per_group"),
+                "confidence_level": experiment.get("confidence_level", 0.95)
+            }
+        }
         
         # Default event types if not specified
         if event_types is None:
@@ -126,8 +142,8 @@ class ExperimentService:
             
             # Update results with actual counts (not zeros for empty counts)
             for variant, count in counts.items():
-                if variant in results:
-                    results[variant][event_type] = count
+                if variant in results["variants"]:
+                    results["variants"][variant][event_type] = count
         
         # Add assignment counts if requested
         if include_assignments:
@@ -135,15 +151,53 @@ class ExperimentService:
             
             # Update results with assignment counts
             for variant, count in assignment_counts.items():
-                if variant in results:
-                    results[variant]["assignments"] = count
+                if variant in results["variants"]:
+                    results["variants"][variant]["assignments"] = count
                     
         # Add population info if available in the experiment
         if "total_population" in experiment and experiment["total_population"]:
             total_population = experiment["total_population"]
-            for variant in results:
-                results[variant]["total_population"] = total_population
+            results["metadata"]["total_population"] = total_population
+        
+        # Ensure all variants have at least zero counts for all event types
+        for variant in results["variants"]:
+            for event_type in event_types:
+                if event_type not in results["variants"][variant]:
+                    results["variants"][variant][event_type] = 0
+            if include_assignments and "assignments" not in results["variants"][variant]:
+                results["variants"][variant]["assignments"] = 0
+        
+        # Calculate statistical significance if requested
+        if include_analysis:
+            # We need at least conversions and impressions to do statistical analysis
+            if "conversion" in event_types and "impression" in event_types:
+                try:
+                    # Calculate confidence level
+                    confidence_level = experiment.get("confidence_level", 0.95)
                     
+                    # Run statistical analysis
+                    analysis = statistics_service.analyze_experiment_results(
+                        {name: data for name, data in results["variants"].items()},
+                        confidence_level=confidence_level
+                    )
+                    
+                    # Add statistical data to results
+                    results["analysis"] = analysis
+                    
+                    # Calculate sample size recommendation if base_rate and min_detectable_effect are provided
+                    if experiment.get("base_rate") is not None and experiment.get("min_detectable_effect") is not None:
+                        try:
+                            results["metadata"]["recommended_sample_size"] = statistics_service.calculate_sample_size(
+                                base_rate=experiment["base_rate"],
+                                min_detectable_effect=experiment["min_detectable_effect"],
+                                confidence_level=confidence_level
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to calculate recommended sample size: {str(e)}")
+                except Exception as e:
+                    logger.warning(f"Statistical analysis failed: {str(e)}")
+        
         return results
+
 # Initialize the global service
 experiment_service = ExperimentService()
