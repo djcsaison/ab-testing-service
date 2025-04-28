@@ -11,7 +11,6 @@ A comprehensive A/B testing service with FastAPI, Redis, and DynamoDB, designed 
 - **Event Tracking**: Track impressions, conversions, and custom events
 - **Real-time Analytics**: View experiment performance metrics
 - **Admin Dashboard**: Built-in SPA for managing experiments
-- **Cloud-Native**: AWS CloudFormation for infrastructure
 
 ## Architecture
 
@@ -19,30 +18,21 @@ A comprehensive A/B testing service with FastAPI, Redis, and DynamoDB, designed 
 - **Redis**: Caching and fast lookups
 - **DynamoDB**: Persistent storage for experiments, assignments, and events
 - **Single Page Application**: Admin dashboard built with vanilla JavaScript
-- **CloudFormation**: Infrastructure as Code for AWS resources
 
-## Getting Started
-
-### Prerequisites
-
-- Docker and Docker Compose
-- Python 3.11+
-- AWS CLI (for production deployment)
-
-### Statistical Parameters Supported
+## Understanding Statistical Parameters
 
 The service supports these essential A/B testing parameters:
 
-- **exp_name**: Name of the experiment (used as unique identifier)
-- **control_group_name**: The variant marked as "control" (baseline for comparison)
-- **base_rate**: Baseline conversion rate in the control group (e.g., 0.2 for 20%)
-- **min_detectable_effect**: Smallest change you want to detect (e.g., 0.05 for 5% improvement)
-- **min_sample_size_per_group**: Users needed in each variant for statistical validity
-- **description**: Detailed description of the experiment
-- **additional_features**: Optional JSON object for extra configuration
-- **group_and_portion**: Implemented via variant weights (e.g., control: 1, treatment: 3 for 25%/75% split)
+- **Base Rate**: Baseline conversion rate in the control group (e.g., 0.2 for 20%). This is used for sample size calculations.
+- **Min Detectable Effect**: Smallest change you want to detect (e.g., 0.05 for 5% improvement). Used for sample size calculations.
+- **Min Sample Size Per Group**: Recommended number of users needed in each variant for statistical validity.
+- **Confidence Level**: Statistical confidence for results (typically 95%). Used in sample size calculations.
+- **Total Population**: Optional limit on the total number of users in an experiment. When reached, new users get the control variant.
+- **Variant Weights**: Controls the distribution of users between variants (e.g., control: 1, treatment: 3 for 25%/75% split).
 
-### Quick Start with Docker (Development)
+> **Note**: Base rate, minimum detectable effect, and confidence level are primarily informational - they help you plan experiments but don't directly affect how users are assigned to variants. The system calculates recommended sample sizes based on these values.
+
+## Getting Started with Docker
 
 1. Clone this repository:
    ```bash
@@ -50,34 +40,36 @@ The service supports these essential A/B testing parameters:
    cd ab-testing-service
    ```
 
-2. Start the development environment with local DynamoDB:
+2. Start the development environment with Docker Compose:
    ```bash
-   docker-compose --profile dev up -d
+   docker-compose up -d
    ```
 
 3. Access the dashboard at [http://localhost:8000](http://localhost:8000)
 
 4. API documentation is available at [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
 
-### Production Deployment
+## Production Deployment
 
-For production, we use CloudFormation to provision DynamoDB tables and Docker for the application:
+For production deployment, you'll need to:
 
-1. Deploy the DynamoDB infrastructure:
-   ```bash
-   aws cloudformation create-stack \
-     --stack-name ab-testing-infrastructure \
-     --template-body file://cloudformation-template.yaml
+1. Create DynamoDB tables in AWS or use a managed DynamoDB service
+2. Configure environment variables in a `.env` file:
+   ```
+   AWS_REGION=us-east-1
+   AWS_ACCESS_KEY_ID=your_access_key
+   AWS_SECRET_ACCESS_KEY=your_secret_key
+   REDIS_HOST=your_redis_host
+   REDIS_PORT=6379
+   EXPERIMENTS_TABLE=ab-testing-experiments
+   ASSIGNMENTS_TABLE=ab-testing-assignments
+   EVENTS_TABLE=ab-testing-events
    ```
 
-2. Configure environment variables in a `.env` file
-
-3. Deploy the application:
+3. Deploy using Docker:
    ```bash
    docker-compose up -d
    ```
-
-See the [Deployment Guide](DEPLOYMENT.md) for detailed instructions.
 
 ## Admin Dashboard
 
@@ -146,6 +138,20 @@ requests.post(
     params={"subid": "user123", "experiment_id": "homepage_banner"}
 )
 ```
+
+## How the Assignment Algorithm Works
+
+The service uses a deterministic assignment algorithm that:
+
+1. Checks if the experiment has reached its population limit (if set)
+2. If the experiment is full, assigns the user to the control variant
+3. Otherwise, generates a hash based on the user ID and experiment ID
+4. Uses the hash to assign the user to a variant based on the variant weights
+
+This ensures:
+- The same user always gets the same variant in a given experiment
+- The distribution of users matches the configured variant weights
+- Assignments are properly randomized but deterministic
 
 ## License
 
