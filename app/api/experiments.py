@@ -118,6 +118,10 @@ async def get_experiment_stats(
         # Add experiment_id to the response for backward compatibility
         stats["experiment_id"] = experiment_id
         
+        # For backward compatibility with older clients
+        if "variants" in stats and "variant_stats" not in stats:
+            stats["variant_stats"] = stats["variants"]
+        
         return stats
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

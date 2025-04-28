@@ -115,8 +115,13 @@ class ExperimentResponse(ExperimentInDB):
     pass
 
 class ExperimentStats(BaseModel):
-    experiment_id: str  # Keep this for compatibility
-    variant_stats: Dict[str, Dict[str, int]]  # variant_name -> stats
+    experiment_id: str
+    variants: Dict[str, Dict[str, int]]
+    variant_stats: Optional[Dict[str, Dict[str, int]]] = None
+    control_variant: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    analysis: Optional[Dict[str, Any]] = None
     
     class Config:
         orm_mode = True
+        extra = "allow"  # Allow extra fields for forward compatibility
