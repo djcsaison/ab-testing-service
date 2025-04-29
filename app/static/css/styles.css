@@ -1,178 +1,363 @@
-/* Custom styles for the A/B Testing Dashboard */
+/* Enhanced styles for the A/B Testing Dashboard */
 
-.badge.bg-draft {
-    background-color: #6c757d;
-}
-
-.badge.bg-active {
-    background-color: #198754;
-}
-
-.badge.bg-paused {
-    background-color: #fd7e14;
-}
-
-.badge.bg-completed {
-    background-color: #0d6efd;
-}
-
-.variant-item {
-    background-color: #f8f9fa;
-    border-radius: 5px;
-    padding: 15px;
-    margin-bottom: 10px;
-    position: relative;
-}
-
-.variant-item .remove-variant {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    cursor: pointer;
-}
-
-.stats-card {
-    border-left: 5px solid #0d6efd;
-    margin-bottom: 15px;
-}
-
-.experiment-actions .btn {
-    margin-right: 5px;
-}
-
-.status-label {
+:root {
+    --primary-color: #2c68d9;
+    --primary-hover: #1c50b0;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --warning-color: #fd7e14;
+    --danger-color: #dc3545;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --sidebar-width: 250px;
+  }
+  
+  body {
+    background-color: #f5f7fa;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232c68d9' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    color: #495057;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  
+  /* Navbar styling */
+  .navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(90deg, #2c68d9, #1d4fa8);
+    padding: 0.7rem 1rem;
+  }
+  
+  .navbar-brand {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  
+  /* Main container */
+  .main-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  
+  /* Card styling */
+  .card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+  }
+  
+  .card:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .card-header {
+    background-color: rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1rem 1.25rem;
+  }
+  
+  /* Table styling */
+  .table {
+    margin-bottom: 0;
+  }
+  
+  .table th {
+    font-weight: 600;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-top: none;
+  }
+  
+  .table td {
+    vertical-align: middle;
+  }
+  
+  /* Button styling */
+  .btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+  }
+  
+  .btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+  
+  .btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+  
+  /* Badge styling */
+  .badge {
+    font-weight: 500;
+    padding: 0.4em 0.7em;
+    border-radius: 4px;
+  }
+  
+  .badge.bg-draft {
+    background-color: var(--secondary-color);
+  }
+  
+  .badge.bg-active {
+    background-color: var(--success-color);
+  }
+  
+  .badge.bg-paused {
+    background-color: var(--warning-color);
+  }
+  
+  .badge.bg-completed {
+    background-color: var(--primary-color);
+  }
+  
+  /* Status labels */
+  .status-label {
     display: inline-block;
     padding: 0.25em 0.6em;
     font-size: 0.75em;
-    font-weight: 700;
-    border-radius: 0.25rem;
+    font-weight: 600;
+    border-radius: 4px;
     text-transform: uppercase;
-}
-
-/* Status pill colors */
-.status-draft {
+    letter-spacing: 0.5px;
+  }
+  
+  /* Status pill colors */
+  .status-draft {
     background-color: #e9ecef;
     color: #495057;
-}
-
-.status-active {
+  }
+  
+  .status-active {
     background-color: #d1e7dd;
     color: #0f5132;
-}
-
-.status-paused {
+  }
+  
+  .status-paused {
     background-color: #fff3cd;
     color: #664d03;
-}
-
-.status-completed {
+  }
+  
+  .status-completed {
     background-color: #cfe2ff;
     color: #084298;
-}
-
-/* Dashboard stats */
-.stat-card {
+  }
+  
+  /* Dashboard stats */
+  .stat-card {
     padding: 1.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
     margin-bottom: 1.5rem;
-}
-
-.stat-title {
+    background-color: white;
+    transition: transform 0.2s;
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-3px);
+  }
+  
+  .stat-title {
     font-size: 0.875rem;
     font-weight: 600;
     text-transform: uppercase;
-    color: #6c757d;
+    color: var(--secondary-color);
     margin-bottom: 0.5rem;
-}
-
-.stat-value {
-    font-size: 1.5rem;
+    letter-spacing: 0.5px;
+  }
+  
+  .stat-value {
+    font-size: 1.75rem;
     font-weight: 700;
     margin-bottom: 0;
-}
-
-/* Variant visual representation */
-.variant-distribution {
+    color: var(--dark-color);
+  }
+  
+  /* Variant visual representation */
+  .variant-distribution {
     height: 1.5rem;
     border-radius: 0.25rem;
     overflow: hidden;
     margin-top: 0.5rem;
     margin-bottom: 1rem;
     display: flex;
-}
-
-.variant-segment {
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .variant-segment {
     height: 100%;
-}
-
-/* Utility classes */
-.cursor-pointer {
+    transition: width 0.3s ease;
+  }
+  
+  /* Experiment form */
+  .variant-item {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+  }
+  
+  .variant-item:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .variant-item .remove-variant {
+    position: absolute;
+    top: 10px;
+    right: 10px;
     cursor: pointer;
-}
-
-/* Loading indicator */
-.loading-spinner {
+    font-size: 1.25rem;
+    color: #6c757d;
+    transition: color 0.2s;
+  }
+  
+  .variant-item .remove-variant:hover {
+    color: #dc3545;
+  }
+  
+  /* Utility classes */
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  
+  /* Loading indicator */
+  .loading-spinner {
     width: 3rem;
     height: 3rem;
-}
-
-.loading-container {
+    border-width: 0.25rem;
+  }
+  
+  .loading-container {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 200px;
-}
-
-/* Statistical analysis styles */
-.table-statistical {
+  }
+  
+  /* Modal styling */
+  .modal-content {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .modal-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+  
+  .modal-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Form controls */
+  .form-control, .form-select {
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(44, 104, 217, 0.25);
+  }
+  
+  /* Statistical analysis styles */
+  .table-statistical {
     font-size: 0.9rem;
-}
-
-.table-statistical th {
-    background-color: #f8f9fa;
-}
-
-.status-winning {
+  }
+  
+  .table-statistical th {
+    background-color: rgba(0, 0, 0, 0.02);
+    font-weight: 600;
+  }
+  
+  .status-winning {
     color: #0f5132;
-}
-
-.status-losing {
+    font-weight: 600;
+  }
+  
+  .status-losing {
     color: #842029;
-}
-
-.status-inconclusive {
+    font-weight: 600;
+  }
+  
+  .status-inconclusive {
     color: #6c757d;
-}
-
-.progress {
+    font-weight: 600;
+  }
+  
+  /* Progress bar styling */
+  .progress {
     background-color: #e9ecef;
     border-radius: 0.25rem;
-}
-
-.progress-bar {
-    background-color: #0d6efd;
+    height: 0.75rem;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+  
+  .progress-bar {
+    background-color: var(--primary-color);
     color: white;
     text-align: center;
-    line-height: 20px;
-    font-size: 0.8rem;
-}
-
-.metric-card {
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-
-.metric-title {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    color: #6c757d;
+    line-height: 0.75rem;
+  }
+  
+  /* Metric cards */
+  .metric-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    background-color: white;
+    transition: all 0.2s ease;
+  }
+  
+  .metric-card:hover {
+    box-shadow: var(--card-shadow);
+  }
+  
+  .metric-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--secondary-color);
     margin-bottom: 0.5rem;
-}
-
-.metric-value {
-    font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .metric-value {
+    font-size: 1.4rem;
     font-weight: 700;
-}
+    color: var(--dark-color);
+  }
+  
+  /* Add a professional touch to the page header */
+  .page-header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 1rem;
+  }
+  
+  .page-header h1 {
+    font-weight: 600;
+    color: var(--dark-color);
+  }
+  
+  /* Add better focus for elements */
+  :focus {
+    outline: none;
+  }
+  
+  /* Subtle hover effects for rows */
+  .table-hover tbody tr:hover {
+    background-color: rgba(44, 104, 217, 0.05);
+  }

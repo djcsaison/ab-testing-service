@@ -10,43 +10,92 @@
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">A/B Testing Dashboard</a>
-        </div>
-    </nav>
+    <!-- Replace your current navbar with this one -->
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-bar-chart-line-fill me-2" viewBox="0 0 16 16">
+          <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1V2z"/>
+        </svg>
+        A/B Testing Dashboard
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/api/docs" target="_blank">API Docs</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
+  <div class="container mt-4">
+    <div class="row page-header">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="mb-0">Experiments</h1>
+            <p class="text-muted mb-0">Manage your A/B testing experiments</p>
+          </div>
+          <button id="create-experiment-btn" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-1" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+            </svg>
+            Create Experiment
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
     <div class="container mt-4">
         <div class="row mb-4">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h1>Experiments</h1>
-                    <button id="create-experiment-btn" class="btn btn-primary">Create Experiment</button>
+                    
                 </div>
             </div>
         </div>
 
         <!-- Experiment Filter -->
-        <div class="row mb-4">
-            <div class="col-md-6">
+        <!-- Replace your current filter section with this one -->
+<div class="container">
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="status-filter" class="form-label small text-muted">Status</label>
                 <div class="input-group">
-                    <span class="input-group-text">Status</span>
-                    <select id="status-filter" class="form-select">
-                        <option value="">All Statuses</option>
-                        <option value="draft">Draft</option>
-                        <option value="active">Active</option>
-                        <option value="paused">Paused</option>
-                        <option value="completed">Completed</option>
-                    </select>
+                  <span class="input-group-text"><i class="bi bi-funnel"></i></span>
+                  <select id="status-filter" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="draft">Draft</option>
+                    <option value="active">Active</option>
+                    <option value="paused">Paused</option>
+                    <option value="completed">Completed</option>
+                  </select>
                 </div>
-            </div>
-            <div class="col-md-6">
+              </div>
+              <div class="col-md-6">
+                <label for="search-input" class="form-label small text-muted">Search</label>
                 <div class="input-group">
-                    <span class="input-group-text">Search</span>
-                    <input type="text" id="search-input" class="form-control" placeholder="Search by name...">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input type="text" id="search-input" class="form-control" placeholder="Search by name...">
                 </div>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
+    </div>
+  </div>
 
         <!-- Experiments List -->
         <div class="row">
