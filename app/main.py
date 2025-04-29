@@ -46,11 +46,9 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="A/B Testing service with FastAPI and DynamoDB",
     lifespan=lifespan,
-    # Protect Swagger UI with basic auth in non-development environments or if explicitly enabled
     docs_url="/api/docs",
     redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json",
-    dependencies=[Depends(authenticate_swagger)] if settings.should_authenticate() else []
+    openapi_url="/api/openapi.json"
 )
 
 # Add CORS middleware
@@ -62,8 +60,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add Basic Auth middleware if enabled
-app.add_middleware(BasicAuthMiddleware)
+
 
 # Add request ID and logging middleware
 @app.middleware("http")
@@ -112,7 +109,7 @@ if static_dir.exists():
 else:
     logger.warning(f"Static files directory {static_dir} does not exist")
 
-# Add a health check endpoint
+
 @app.get("/api/health", tags=["health"])
 async def health_check():
     """Health check endpoint"""
@@ -159,6 +156,7 @@ async def admin_dashboard():
         </html>
         """
 
+
 # Return API info for /api endpoint
 @app.get("/api", tags=["root"])
 async def api_root():
@@ -169,6 +167,10 @@ async def api_root():
         "docs": "/api/docs",
         "environment": settings.ENVIRONMENT.value
     }
+
+
+# Add Basic Auth middleware if enabled
+app.add_middleware(BasicAuthMiddleware)
 
 # Start the application with Uvicorn when run directly
 if __name__ == "__main__":

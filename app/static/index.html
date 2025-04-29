@@ -1,274 +1,457 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>A/B Testing Admin Dashboard</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body>
     <!-- Replace your current navbar with this one -->
-<nav class="navbar navbar-expand-lg navbar-dark">
-    <div class="container">
-      <a class="navbar-brand d-flex align-items-center" href="#">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-bar-chart-line-fill me-2" viewBox="0 0 16 16">
-          <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1V2z"/>
-        </svg>
-        A/B Testing Dashboard
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link active" href="#">Dashboard</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/api/docs" target="_blank">API Docs</a>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-
-  <div class="container mt-4">
-    <div class="row page-header">
-      <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h1 class="mb-0">Experiments</h1>
-            <p class="text-muted mb-0">Manage your A/B testing experiments</p>
-          </div>
-          <button id="create-experiment-btn" class="btn btn-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-1" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
-            </svg>
-            Create Experiment
-          </button>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="currentColor"
+            class="bi bi-bar-chart-line-fill me-2"
+            viewBox="0 0 16 16"
+          >
+            <path
+              d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1V2z"
+            />
+          </svg>
+          A/B Testing Dashboard
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" href="#">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/api/docs" target="_blank">API Docs</a>
+            </li>
+          </ul>
         </div>
       </div>
-    </div>
-  </div>
+    </nav>
+
     <div class="container mt-4">
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    
-                </div>
+      <div class="row page-header">
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h1 class="mb-0">Experiments</h1>
+              <p class="text-muted mb-0">Manage your A/B testing experiments</p>
             </div>
+            <button id="create-experiment-btn" class="btn btn-primary">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-plus-lg me-1"
+                viewBox="0 0 16 16"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
+                />
+              </svg>
+              Create Experiment
+            </button>
+          </div>
         </div>
+      </div>
+    </div>
+    <div class="container mt-4">
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-center"></div>
+        </div>
+      </div>
 
-        <!-- Experiment Filter -->
-        <!-- Replace your current filter section with this one -->
-<div class="container">
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label for="status-filter" class="form-label small text-muted">Status</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-funnel"></i></span>
-                  <select id="status-filter" class="form-select">
-                    <option value="">All Statuses</option>
-                    <option value="draft">Draft</option>
-                    <option value="active">Active</option>
-                    <option value="paused">Paused</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label for="search-input" class="form-label small text-muted">Search</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-search"></i></span>
-                  <input type="text" id="search-input" class="form-control" placeholder="Search by name...">
+      <!-- Experiment Filter -->
+      <!-- Replace your current filter section with this one -->
+      <div class="container">
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label
+                      for="status-filter"
+                      class="form-label small text-muted"
+                      >Status</label
+                    >
+                    <div class="input-group">
+                      <span class="input-group-text"
+                        ><i class="bi bi-funnel"></i
+                      ></span>
+                      <select id="status-filter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="active">Active</option>
+                        <option value="paused">Paused</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label
+                      for="search-input"
+                      class="form-label small text-muted"
+                      >Search</label
+                    >
+                    <div class="input-group">
+                      <span class="input-group-text"
+                        ><i class="bi bi-search"></i
+                      ></span>
+                      <input
+                        type="text"
+                        id="search-input"
+                        class="form-control"
+                        placeholder="Search by name..."
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-        <!-- Experiments List -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Status</th>
-                                        <th>Variants</th>
-                                        <th>Created</th>
-                                        <th>Population</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="experiments-table-body">
-                                    <!-- Experiments will be loaded here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+      <!-- Experiments List -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Status</th>
+                      <th>Variants</th>
+                      <th>Created</th>
+                      <th>Population</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="experiments-table-body">
+                    <!-- Experiments will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
 
     <!-- Experiment Detail Modal -->
-    <div class="modal fade" id="experiment-detail-modal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Experiment Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="experiment-detail-body">
-                    <!-- Experiment details will be loaded here -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
+    <div
+      class="modal fade"
+      id="experiment-detail-modal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Experiment Details</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body" id="experiment-detail-body">
+            <!-- Experiment details will be loaded here -->
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+          </div>
         </div>
+      </div>
     </div>
 
     <!-- Create/Edit Experiment Modal -->
     <!-- Updated Experiment Form Section -->
-<div class="modal fade" id="experiment-form-modal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div
+      class="modal fade"
+      id="experiment-form-modal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="experiment-form-title">Create Experiment</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="experiment-form">
-                    <input type="hidden" id="form-mode" value="create">
-                    
-                    <div class="mb-3">
-                        <label for="experiment-name" class="form-label">Experiment Name</label>
-                        <input type="text" class="form-control" id="experiment-name" required 
-                                pattern="[a-zA-Z0-9_-]+" title="Only alphanumeric characters, hyphens, and underscores allowed">
-                        <div class="form-text">Only alphanumeric characters, hyphens, and underscores allowed.</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="experiment-description" class="form-label">Description</label>
-                        <textarea class="form-control" id="experiment-description" rows="3"></textarea>
-                    </div>
+          <div class="modal-header">
+            <h5 class="modal-title" id="experiment-form-title">
+              Create Experiment
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="experiment-form">
+              <input type="hidden" id="form-mode" value="create" />
 
-                    <!-- Statistical parameters section -->
-                    <div class="mb-4">
-                        <h6 class="mb-3">Statistical Parameters</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label for="base-rate" class="form-label">Base Rate (0-1)</label>
-                                <input type="number" class="form-control" id="base-rate" min="0" max="1" step="0.01" placeholder="e.g., 0.2 for 20%">
-                                <div class="form-text">The current conversion rate for the control group</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="min-detectable-effect" class="form-label">Min Detectable Effect (0-1)</label>
-                                <input type="number" class="form-control" id="min-detectable-effect" min="0.01" max="1" step="0.01" placeholder="e.g., 0.05 for 5%">
-                                <div class="form-text">The smallest improvement you want to detect</div>
-                            </div>
-                        </div>
-                    </div>
+              <div class="mb-3">
+                <label for="experiment-name" class="form-label"
+                  >Experiment Name</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="experiment-name"
+                  required
+                  pattern="[a-zA-Z0-9_-]+"
+                  title="Only alphanumeric characters, hyphens, and underscores allowed"
+                />
+                <div class="form-text">
+                  Only alphanumeric characters, hyphens, and underscores
+                  allowed.
+                </div>
+              </div>
 
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <label for="min-sample-size" class="form-label">Min Sample Size Per Group</label>
-                            <input type="number" class="form-control" id="min-sample-size" min="1" placeholder="e.g., 1000">
-                            <div class="form-text">Minimum users needed in each variant for statistical validity</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="confidence-level" class="form-label">Confidence Level</label>
-                            <select class="form-select" id="confidence-level">
-                                <option value="0.9">90%</option>
-                                <option value="0.95" selected>95%</option>
-                                <option value="0.99">99%</option>
-                            </select>
-                            <div class="form-text">Statistical confidence for results</div>
-                        </div>
-                    </div>
+              <div class="mb-3">
+                <label for="experiment-description" class="form-label"
+                  >Description</label
+                >
+                <textarea
+                  class="form-control"
+                  id="experiment-description"
+                  rows="3"
+                ></textarea>
+              </div>
 
-                    <div class="mb-3">
-                        <label for="experiment-population" class="form-label">Total Population (optional)</label>
-                        <input type="number" class="form-control" id="experiment-population" min="1">
-                        <div class="form-text">Maximum number of users in the experiment. Leave empty for unlimited.</div>
+              <!-- Statistical parameters section -->
+              <div class="mb-4">
+                <h6 class="mb-3">Statistical Parameters</h6>
+                <div class="row">
+                  <div class="col-md-6">
+                    <label for="base-rate" class="form-label"
+                      >Base Rate (0-1)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="base-rate"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      placeholder="e.g., 0.2 for 20%"
+                    />
+                    <div class="form-text">
+                      The current conversion rate for the control group
                     </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="min-detectable-effect" class="form-label"
+                      >Min Detectable Effect (0-1)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="min-detectable-effect"
+                      min="0.01"
+                      max="1"
+                      step="0.01"
+                      placeholder="e.g., 0.05 for 5%"
+                    />
+                    <div class="form-text">
+                      The smallest improvement you want to detect
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-                    <div class="mb-4">
-                        <h6 class="mb-3">Variants</h6>
-                        <p class="form-text mb-3">Define at least two variants (control and treatment). Mark one as the control group.</p>
-                        <div id="variants-container">
-                            <!-- Variant fields will be added here -->
-                        </div>
-                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-variant-btn">
-                            + Add Variant
-                        </button>
-                    </div>
+              <div class="row mb-4">
+                <div class="col-md-6">
+                  <label for="min-sample-size" class="form-label"
+                    >Min Sample Size Per Group</label
+                  >
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="min-sample-size"
+                    min="1"
+                    placeholder="e.g., 1000"
+                  />
+                  <div class="form-text">
+                    Minimum users needed in each variant for statistical
+                    validity
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label for="confidence-level" class="form-label"
+                    >Confidence Level</label
+                  >
+                  <select class="form-select" id="confidence-level">
+                    <option value="0.9">90%</option>
+                    <option value="0.95" selected>95%</option>
+                    <option value="0.99">99%</option>
+                  </select>
+                  <div class="form-text">
+                    Statistical confidence for results
+                  </div>
+                </div>
+              </div>
 
-                    <div class="mb-3">
-                        <label for="additional-features" class="form-label">Additional Features (Optional JSON)</label>
-                        <textarea class="form-control" id="additional-features" rows="2" placeholder='{"custom_param": "value"}'></textarea>
-                        <div class="form-text">Additional configuration as JSON</div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="save-experiment-btn">Save</button>
-            </div>
+              <div class="mb-3">
+                <label for="experiment-population" class="form-label"
+                  >Total Population (optional)</label
+                >
+                <input
+                  type="number"
+                  class="form-control"
+                  id="experiment-population"
+                  min="1"
+                />
+                <div class="form-text">
+                  Maximum number of users in the experiment. Leave empty for
+                  unlimited.
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <h6 class="mb-3">Variants</h6>
+                <p class="form-text mb-3">
+                  Define at least two variants (control and treatment). Mark one
+                  as the control group.
+                </p>
+                <div id="variants-container">
+                  <!-- Variant fields will be added here -->
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm mt-2"
+                  id="add-variant-btn"
+                >
+                  + Add Variant
+                </button>
+              </div>
+
+              <div class="mb-3">
+                <label for="additional-features" class="form-label"
+                  >Additional Features (Optional JSON)</label
+                >
+                <textarea
+                  class="form-control"
+                  id="additional-features"
+                  rows="2"
+                  placeholder='{"custom_param": "value"}'
+                ></textarea>
+                <div class="form-text">Additional configuration as JSON</div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-experiment-btn"
+            >
+              Save
+            </button>
+          </div>
         </div>
+      </div>
     </div>
-</div>
 
-<div class="modal fade" id="login-modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog">
+    <div
+      class="modal fade"
+      id="login-modal"
+      tabindex="-1"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
+      <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">A/B Testing Dashboard Login</h5>
-            </div>
-            <div class="modal-body">
-                <form id="login-form">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" required>
-                    </div>
-                    <div class="alert alert-danger d-none" id="login-error">
-                        Invalid username or password
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" id="login-btn">Login</button>
-            </div>
+          <div class="modal-header">
+            <h5 class="modal-title">A/B Testing Dashboard Login</h5>
+          </div>
+          <div class="modal-body">
+            <form id="login-form">
+              <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="username"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  required
+                />
+              </div>
+              <div class="alert alert-danger d-none" id="login-error">
+                Invalid username or password
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="login-btn">
+              Login
+            </button>
+          </div>
         </div>
+      </div>
     </div>
-</div>
-
 
     <!-- Bootstrap & Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- App JS -->
     <script src="/static/js/api.js"></script>
     <script src="/static/js/experiments.js"></script>
     <script src="/static/js/main.js"></script>
-</body>
+  </body>
 </html>

@@ -34,7 +34,7 @@ class BasicAuthMiddleware:
             settings.ENVIRONMENT.value == "production"
         ):
             logger.warning("Using default basic auth credentials in production - this is insecure!")
-    
+
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             # Pass through non-HTTP requests (like WebSockets)
@@ -45,23 +45,30 @@ class BasicAuthMiddleware:
         request = Request(scope, receive=receive, send=send)
         path = request.url.path
         
-        # Skip authentication for certain paths or if auth is disabled
-        if (
+        logger.debug(f"Request path: {path}")
+        
+        # Check if this path should bypass authentication
+        should_bypass = (
             not self.auth_enabled or
             path.startswith("/static") or
             path == "/api/health" or
-            path == "/"  # Root dashboard page loads, then JS makes authenticated requests
-        ):
+            path.startswith("/api/health?") or
+            path == "/"
+        )
+        
+        if should_bypass:
+            logger.debug(f"Bypassing authentication for path: {path}")
             await self.app(scope, receive, send)
             return
-            
-        # Implement basic auth for API endpoints
+        
+        # For all other paths, implement authentication
         headers = dict(request.headers.items())
         authorization = headers.get("authorization", "")
         scheme, param = get_authorization_scheme_param(authorization)
         
         # No auth header or wrong scheme
         if not authorization or scheme.lower() != "basic":
+            logger.debug(f"No valid auth for path: {path}")
             response = Response(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 headers={"WWW-Authenticate": "Basic"},
@@ -72,6 +79,7 @@ class BasicAuthMiddleware:
         
         # Invalid auth format
         if not param:
+            logger.debug(f"Invalid auth format for path: {path}")
             response = Response(
                 status_code=status.HTTP_401_UNAUTHORIZED, 
                 headers={"WWW-Authenticate": "Basic"},
@@ -100,6 +108,7 @@ class BasicAuthMiddleware:
                 return
                 
             # Credentials are valid, proceed with request
+            logger.debug(f"Authentication successful for path: {path}")
             await self.app(scope, receive, send)
             
         except Exception as e:
